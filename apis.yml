@@ -1,0 +1,57 @@
+name: Ablo
+description: >-
+  Coordination/collaboration infrastructure for AI agents — one API that lets agents, apps, and services claim, change,
+  and confirm the same database rows using durable claims (leases with wait-lines) plus guarded, idempotent writes that
+  return receipts and reject stale writes.
+url: https://ablo.apievangelist.com/apis.yml
+created: '2026-08-19'
+modified: '2026-08-19'
+specificationVersion: '0.21'
+tags:
+  - agent-infrastructure
+  - multi-agent-coordination
+  - concurrency-control
+  - state-management
+  - database
+  - postgres
+  - real-time-sync
+  - mcp
+  - developer-tools
+  - backend-infrastructure
+apis:
+  - name: Ablo API
+    description: >-
+      REST API for multi-agent coordination over shared state: models (row CRUD), durable claims with wait-lines,
+      credentials, branches, schema, logs, and commits. Bearer-token auth, version 0.55.0.
+    humanURL: https://docs.abloatai.com/api-reference
+    baseURL: https://api.abloatai.com/api
+    tags:
+      - agent-infrastructure
+      - multi-agent-coordination
+      - concurrency-control
+      - state-management
+      - database
+      - postgres
+      - real-time-sync
+      - mcp
+      - developer-tools
+      - backend-infrastructure
+    properties:
+      - type: OpenAPI
+        url: https://docs.abloatai.com/openapi.json
+      - type: LLMsTxt
+        url: https://docs.abloatai.com/llms.txt
+      - type: Documentation
+        url: https://docs.abloatai.com
+      - type: Documentation
+        url: https://docs.abloatai.com/api-reference
+      - type: Documentation
+        url: https://docs.abloatai.com/api
+maintainers:
+  - FN: Ablo
+    url: https://www.abloatai.com
+generated:
+  by: apis.io/add
+  model: claude-opus-4-8
+  confidence: 90
+  at: '2026-08-19T10:57:24.801Z'
