@@ -1,0 +1,32 @@
+{
+  "provider": "ablo",
+  "sources": [
+    "ablo-api-openapi.yml"
+  ],
+  "outputs": [
+    "ablo-branches-api-openapi.yml",
+    "ablo-claims-api-openapi.yml",
+    "ablo-commits-api-openapi.yml",
+    "ablo-credentials-api-openapi.yml",
+    "ablo-logs-api-openapi.yml",
+    "ablo-models-api-openapi.yml",
+    "ablo-schema-api-openapi.yml"
+  ],
+  "archived": [
+    "archived openapi/abloatai-api-openapi.yml"
+  ],
+  "errors": [],
+  "warnings": [],
+  "notes": [
+    "ablo-api-openapi.yml: upgraded openapi 3.1.0 -> OpenAPI 3.2.0",
+    "ablo-api-openapi.yml: declared missing tag: branches",
+    "ablo-api-openapi.yml: declared missing tag: claims",
+    "ablo-api-openapi.yml: declared missing tag: commits",
+    "ablo-api-openapi.yml: declared missing tag: credentials",
+    "ablo-api-openapi.yml: declared missing tag: logs",
+    "ablo-api-openapi.yml: declared missing tag: models",
+    "ablo-api-openapi.yml: declared missing tag: schema",
+    "apis.yml register: written (+7 apis, 8 total)"
+  ],
+  "skipped": []
+}

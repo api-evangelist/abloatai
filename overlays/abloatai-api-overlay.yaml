@@ -1,0 +1,136 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancements for the Ablo API
+  version: 1.0.0
+extends: openapi/abloatai-api-openapi.yml
+x-generated: '2026-08-19'
+x-method: generated
+x-source: >-
+  Derived from artifacts in this repo: authentication/, conventions/, errors/, rate-limits/,
+  lifecycle/, plans/, mcp/ and asyncapi/. The original spec at openapi/_original/ablo-openapi.json
+  is never mutated.
+actions:
+  - target: $.info
+    description: Contact, docs and provenance the published spec omits.
+    update:
+      contact:
+        name: Ablo Support
+        email: support@abloatai.com
+        url: https://www.abloatai.com
+      termsOfService: https://www.abloatai.com/terms-conditions
+      x-apievangelist-slug: ablo
+      x-apievangelist-profile: https://apis.io/provider/ablo
+      x-logo:
+        url: https://www.abloatai.com/logo-black.svg
+      x-error-registry: https://docs.abloatai.com/errors
+      x-error-registry-codes: 288
+      x-error-contract-version: '2026-08-15'
+      x-llms-txt: https://docs.abloatai.com/llms.txt
+      x-agents-md: https://github.com/Abloatai/abloatai/blob/main/packages/abloatai/AGENTS.md
+      x-source-repository: https://github.com/Abloatai/ablo
+  - target: $.externalDocs
+    description: The spec ships no externalDocs.
+    update:
+      description: Ablo documentation
+      url: https://docs.abloatai.com
+  - target: $.tags
+    description: The spec declares an EMPTY tags array even though all 32 operations are tagged. Declare the seven tags in use, with descriptions.
+    update:
+      - name: models
+        description: Generic CRUD over any model the caller's pushed schema declares. The {model} path parameter is customer-defined.
+      - name: claims
+        description: Durable leases with a wait-line. Claims do not lock — a second writer waits and is handed the fresh row.
+      - name: credentials
+        description: Minting, inspecting, rotating and revoking capabilities and ephemeral session keys.
+      - name: branches
+        description: Immutable transaction branch planes and their expiring branch-bound credentials.
+      - name: schema
+        description: What the models look like on the plane this credential is bound to.
+      - name: logs
+        description: The ordered transaction log, and whether what was recorded could reach anyone.
+      - name: commits
+        description: Atomic batch operations and durable premise registration.
+  - target: $.servers
+    description: Annotate the two declared servers.
+    update:
+      - url: https://api.abloatai.com/api
+        description: Production
+        x-environment: production
+      - url: http://localhost:8787/api
+        description: Local development
+        x-environment: local
+        x-note: Declared by the provider; the docs do not document running the engine standalone.
+  - target: $.components.securitySchemes.bearerAuth
+    description: The spec's one-line description understates a five-class prefix-typed credential model.
+    update:
+      x-credential-classes:
+        sk_: trusted runtime secret — server, worker or agent; full org authority when unscoped
+        rk_: restricted or delegated runtime
+        pk_: publishable browser key — read-only
+        ek_: ephemeral user session — short-lived, minted server-side
+        mk_: project and branch management — the only class that may carry management scopes
+      x-key-grants:
+        - schema:push
+        - project:manage
+        - branch:manage
+        - organization:act-as
+      x-auth-failure-header: X-Auth-Failure
+      x-docs: https://docs.abloatai.com/api-keys
+      x-artifact: authentication/ablo-authentication.yml
+  - target: $.components.schemas.ErrorEnvelope
+    description: Bind the envelope to the published 288-code registry.
+    update:
+      x-registry: https://docs.abloatai.com/errors
+      x-registry-artifact: errors/ablo-error-codes.yml
+      x-code-count: 288
+      x-category-count: 14
+      x-retryable-flag-published: true
+      x-rfc9457: false
+      x-note: Custom AbloError envelope, not application/problem+json. Every error carries a doc_url deep-link to its anchor.
+  - target: $.paths['/v1/models/{model}'].get.parameters[?(@.name=='cursor')]
+    description: Document the opaque cursor contract.
+    update:
+      x-pagination-style: cursor
+      x-response-field: next_cursor
+      x-replaces: starting_after
+      x-renamed-in: 0.53.0
+  - target: $.paths['/v1/commits'].post
+    description: Flag the marquee write path and its MCP gap.
+    update:
+      x-idempotency-header: Idempotency-Key
+      x-idempotency-retention: 24h
+      x-idempotency-artifact: conventions/ablo-conventions.yml
+      x-mcp-tool: null
+      x-mcp-note: No MCP tool backs the atomic batch-commit operation; see mcp/ablo-tool-crosswalk.yml rest_only.
+  - target: $.paths['/v1/models/{model}'].post
+    description: The model write path carries idempotency in the body rather than a header.
+    update:
+      x-idempotency-field: idempotencyKey
+      x-idempotency-note: Failed writes are NOT replayed — they re-run. Only successful writes are recorded.
+      x-stale-guard-fields: [readAt, onStale, reads, track, claim]
+  - target: $.paths['/v1/models/{model}/{id}/claim'].post
+    description: Clarify the 201/202 split, which is the heart of the product.
+    update:
+      x-acquired-status: 201
+      x-queued-status: 202
+      x-lease-semantics: Claims do not lock. A queued writer waits for the holder and is handed the fresh row on acquisition.
+      x-fence-token: fenceToken
+  - target: $.info
+    description: Record the surfaces the OpenAPI does not cover, so an agent reading only the spec is not misled.
+    update:
+      x-uncovered-surfaces:
+        webhook_endpoints:
+          path: /api/v1/webhook_endpoints
+          documented_at: https://docs.abloatai.com/webhooks
+          in_spec: false
+        websocket:
+          transport: WSS
+          contract: none published
+        projects:
+          note: Project CRUD exists on the CLI and the coordination MCP server but has no operation in this spec.
+        usage:
+          note: Usage is visible only via X-Usage-* response headers and the get_usage MCP tool.
+      x-rate-limit-artifact: rate-limits/ablo-rate-limits.yml
+      x-plans-artifact: plans/ablo-plans-pricing.yml
+      x-webhooks-artifact: asyncapi/ablo-webhooks.yml
+      x-mcp-artifact: mcp/ablo-mcp.yml

@@ -1,0 +1,1139 @@
+openapi: 3.2.0
+info:
+  title: Ablo Branches API
+  version: 0.55.0
+  description: 'Ablo collaboration infrastructure: commit, read, and claim. `{model}` is any model from your pushed schema — the routes are the same whichever it is. Authenticate every request with your API key as a Bearer token.'
+  license:
+    name: Apache License 2.0
+    identifier: Apache-2.0
+servers:
+- url: https://api.abloatai.com/api
+  description: Production
+- url: http://localhost:8787/api
+  description: Local development
+security:
+- bearerAuth: []
+tags:
+- name: branches
+paths:
+  /v1/branches:
+    get:
+      tags:
+      - branches
+      summary: List transaction branches for the credential project
+      parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: cursor
+        in: query
+        schema:
+          type: string
+        description: The opaque next_cursor returned by the preceding page.
+      - name: starting_after
+        in: query
+        deprecated: true
+        schema:
+          type: string
+        description: Deprecated spelling of cursor, honoured until it is removed. Send cursor.
+      responses:
+        '200':
+          description: The root and every active child branch.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    const: list
+                  data:
+                    readOnly: true
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        object:
+                          type: string
+                          const: branch
+                        id:
+                          type: string
+                        project_id:
+                          type: string
+                        parent_branch_id:
+                          anyOf:
+                          - type: string
+                          - type: 'null'
+                        slug:
+                          type: string
+                          minLength: 1
+                          maxLength: 40
+                          pattern: ^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$
+                        name:
+                          anyOf:
+                          - type: string
+                          - type: 'null'
+                        kind:
+                          type: string
+                          enum:
+                          - dev
+                          - preview
+                          - test
+                          - long_lived
+                        state:
+                          type: string
+                          enum:
+                          - provisioning
+                          - ready
+                          - failed
+                          - deleting
+                          - deleted
+                        origin:
+                          type: string
+                          enum:
+                          - empty
+                          - source_snapshot
+                          - coordinated_fork
+                        root:
+                          type: boolean
+                        expires_at:
+                          anyOf:
+                          - type: string
+                          - type: 'null'
+                        created_at:
+                          type: string
+                        deleted_at:
+                          anyOf:
+                          - type: string
+                          - type: 'null'
+                      required:
+                      - object
+                      - id
+                      - project_id
+                      - parent_branch_id
+                      - slug
+                      - name
+                      - kind
+                      - state
+                      - origin
+                      - root
+                      - expires_at
+                      - created_at
+                      - deleted_at
+                      additionalProperties: false
+                  has_more:
+                    type: boolean
+                  next_cursor:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                required:
+                - object
+                - data
+                - has_more
+                - next_cursor
+                additionalProperties: false
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: listBranches
+    post:
+      tags:
+      - branches
+      summary: Create an isolated child branch
+      description: The returned id is immutable; retain it for automation. The slug is a project-scoped human handle.
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        schema:
+          type: string
+          maxLength: 255
+        description: Replay identity. Reuse the same key only for an identical request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slug:
+                  type: string
+                  minLength: 1
+                  maxLength: 40
+                  pattern: ^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                parent_branch_id:
+                  type: string
+                kind:
+                  type: string
+                  enum:
+                  - dev
+                  - preview
+                  - test
+                  - long_lived
+                origin:
+                  type: string
+                  enum:
+                  - empty
+                  - source_snapshot
+                  - coordinated_fork
+                expires_at:
+                  type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+              required:
+              - slug
+      responses:
+        '201':
+          description: The ready branch.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    const: branch
+                  id:
+                    type: string
+                  project_id:
+                    type: string
+                  parent_branch_id:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                  slug:
+                    type: string
+                    minLength: 1
+                    maxLength: 40
+                    pattern: ^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$
+                  name:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                  kind:
+                    type: string
+                    enum:
+                    - dev
+                    - preview
+                    - test
+                    - long_lived
+                  state:
+                    type: string
+                    enum:
+                    - provisioning
+                    - ready
+                    - failed
+                    - deleting
+                    - deleted
+                  origin:
+                    type: string
+                    enum:
+                    - empty
+                    - source_snapshot
+                    - coordinated_fork
+                  root:
+                    type: boolean
+                  expires_at:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                  created_at:
+                    type: string
+                  deleted_at:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                required:
+                - object
+                - id
+                - project_id
+                - parent_branch_id
+                - slug
+                - name
+                - kind
+                - state
+                - origin
+                - root
+                - expires_at
+                - created_at
+                - deleted_at
+                additionalProperties: false
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: createBranch
+  /v1/branches/{id}:
+    get:
+      tags:
+      - branches
+      summary: Retrieve a branch by immutable id
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The branch.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    const: branch
+                  id:
+                    type: string
+                  project_id:
+                    type: string
+                  parent_branch_id:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                  slug:
+                    type: string
+                    minLength: 1
+                    maxLength: 40
+                    pattern: ^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$
+                  name:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                  kind:
+                    type: string
+                    enum:
+                    - dev
+                    - preview
+                    - test
+                    - long_lived
+                  state:
+                    type: string
+                    enum:
+                    - provisioning
+                    - ready
+                    - failed
+                    - deleting
+                    - deleted
+                  origin:
+                    type: string
+                    enum:
+                    - empty
+                    - source_snapshot
+                    - coordinated_fork
+                  root:
+                    type: boolean
+                  expires_at:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                  created_at:
+                    type: string
+                  deleted_at:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                required:
+                - object
+                - id
+                - project_id
+                - parent_branch_id
+                - slug
+                - name
+                - kind
+                - state
+                - origin
+                - root
+                - expires_at
+                - created_at
+                - deleted_at
+                additionalProperties: false
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: getBranch
+    delete:
+      tags:
+      - branches
+      summary: Delete a non-root branch and revoke its credentials
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The deleted branch.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    const: branch
+                  id:
+                    type: string
+                  project_id:
+                    type: string
+                  parent_branch_id:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                  slug:
+                    type: string
+                    minLength: 1
+                    maxLength: 40
+                    pattern: ^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$
+                  name:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                  kind:
+                    type: string
+                    enum:
+                    - dev
+                    - preview
+                    - test
+                    - long_lived
+                  state:
+                    type: string
+                    enum:
+                    - provisioning
+                    - ready
+                    - failed
+                    - deleting
+                    - deleted
+                  origin:
+                    type: string
+                    enum:
+                    - empty
+                    - source_snapshot
+                    - coordinated_fork
+                  root:
+                    type: boolean
+                  expires_at:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                  created_at:
+                    type: string
+                  deleted_at:
+                    anyOf:
+                    - type: string
+                    - type: 'null'
+                required:
+                - object
+                - id
+                - project_id
+                - parent_branch_id
+                - slug
+                - name
+                - kind
+                - state
+                - origin
+                - root
+                - expires_at
+                - created_at
+                - deleted_at
+                additionalProperties: false
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: deleteBranch
+  /v1/branches/{id}/credentials:
+    post:
+      tags:
+      - branches
+      summary: Mint an expiring branch-bound test credential
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ttl_hours:
+                  type: integer
+                  minimum: 1
+                  maximum: 168
+              additionalProperties: false
+      responses:
+        '201':
+          description: A one-time plaintext credential. Do not persist it in source control.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    const: branch_credential
+                  branch_id:
+                    type: string
+                  api_key:
+                    type: string
+                  expires_at:
+                    type: string
+                required:
+                - object
+                - branch_id
+                - api_key
+                - expires_at
+                additionalProperties: false
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: mintBranchCredential
+  /v1/branches/{id}/status:
+    get:
+      tags:
+      - branches
+      summary: Diagnose one branch
+      description: Returns branch lifecycle, active schema, compatibility with the parent schema, safe datasource coordinates, and readiness blockers.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The complete branch readiness view.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    const: branch_status
+                  branch:
+                    type: object
+                    properties:
+                      object:
+                        type: string
+                        const: branch
+                      id:
+                        type: string
+                      project_id:
+                        type: string
+                      parent_branch_id:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      slug:
+                        type: string
+                        minLength: 1
+                        maxLength: 40
+                        pattern: ^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$
+                      name:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      kind:
+                        type: string
+                        enum:
+                        - dev
+                        - preview
+                        - test
+                        - long_lived
+                      state:
+                        type: string
+                        enum:
+                        - provisioning
+                        - ready
+                        - failed
+                        - deleting
+                        - deleted
+                      origin:
+                        type: string
+                        enum:
+                        - empty
+                        - source_snapshot
+                        - coordinated_fork
+                      root:
+                        type: boolean
+                      expires_at:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      created_at:
+                        type: string
+                      deleted_at:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                    required:
+                    - object
+                    - id
+                    - project_id
+                    - parent_branch_id
+                    - slug
+                    - name
+                    - kind
+                    - state
+                    - origin
+                    - root
+                    - expires_at
+                    - created_at
+                    - deleted_at
+                    additionalProperties: false
+                  ready:
+                    type: boolean
+                  schema:
+                    type: object
+                    properties:
+                      active:
+                        type: boolean
+                      version:
+                        anyOf:
+                        - type: integer
+                          minimum: -9007199254740991
+                          maximum: 9007199254740991
+                        - type: 'null'
+                      hash:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      parent_compatibility:
+                        type: string
+                        enum:
+                        - same
+                        - compatible
+                        - review
+                        - blocked
+                        - unknown
+                      changes:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      warnings:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      blockers:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                    required:
+                    - active
+                    - version
+                    - hash
+                    - parent_compatibility
+                    - changes
+                    - warnings
+                    - blockers
+                    additionalProperties: false
+                  storage:
+                    oneOf:
+                    - type: object
+                      properties:
+                        kind:
+                          type: string
+                          const: unbound
+                      required:
+                      - kind
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        kind:
+                          type: string
+                          const: customer
+                        transport:
+                          type: string
+                          enum:
+                          - direct
+                          - endpoint
+                        status:
+                          type: string
+                          enum:
+                          - unverified
+                          - active
+                          - rejected
+                      required:
+                      - kind
+                      - transport
+                      - status
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        kind:
+                          type: string
+                          const: internal
+                        implementation:
+                          type: string
+                          enum:
+                          - log
+                          - tables
+                      required:
+                      - kind
+                      - implementation
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        kind:
+                          type: string
+                          const: blocked
+                        reason:
+                          type: string
+                          const: orphaned_external_marker
+                      required:
+                      - kind
+                      - reason
+                      additionalProperties: false
+                  data_source:
+                    anyOf:
+                    - type: object
+                      properties:
+                        connection:
+                          type: string
+                          enum:
+                          - direct
+                          - endpoint
+                        status:
+                          type: string
+                          enum:
+                          - unverified
+                          - active
+                          - rejected
+                        host:
+                          anyOf:
+                          - type: string
+                          - type: 'null'
+                        database:
+                          anyOf:
+                          - type: string
+                          - type: 'null'
+                        cursor:
+                          anyOf:
+                          - type: string
+                          - type: 'null'
+                        event_lag:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        retry_count:
+                          type: integer
+                          minimum: 0
+                          maximum: 9007199254740991
+                        last_success_at:
+                          anyOf:
+                          - type: string
+                          - type: 'null'
+                        last_error:
+                          anyOf:
+                          - type: string
+                          - type: 'null'
+                      required:
+                      - connection
+                      - status
+                      - host
+                      - database
+                      - cursor
+                      - event_lag
+                      - retry_count
+                      - last_success_at
+                      - last_error
+                      additionalProperties: false
+                    - type: 'null'
+                  blockers:
+                    readOnly: true
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                          enum:
+                          - branch_not_ready
+                          - schema_missing
+                          - data_source_not_ready
+                        problem:
+                          type: string
+                        fix:
+                          type: string
+                      required:
+                      - code
+                      - problem
+                      - fix
+                      additionalProperties: false
+                required:
+                - object
+                - branch
+                - ready
+                - schema
+                - storage
+                - data_source
+                - blockers
+                additionalProperties: false
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: getBranchStatus
+components:
+  schemas:
+    ErrorEnvelope:
+      type: object
+      properties:
+        type:
+          type: string
+        code:
+          type: string
+        param:
+          type: string
+        message:
+          type: string
+        doc_url:
+          type: string
+        request_id:
+          type: string
+        event_id:
+          type: string
+        errors:
+          readOnly: true
+          type: array
+          items:
+            readOnly: true
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              param:
+                type: string
+            required:
+            - message
+            additionalProperties: false
+      required:
+      - type
+      - message
+      additionalProperties: true
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Your Ablo API key (sk_… / rk_…).

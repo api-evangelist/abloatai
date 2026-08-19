@@ -1,0 +1,95 @@
+generated: '2026-08-19'
+method: searched
+source: https://docs.abloatai.com/api-keys
+docs: https://docs.abloatai.com/api-keys
+derived_from: openapi/abloatai-api-openapi.yml
+note: >-
+  The OpenAPI declares a single scheme — HTTP bearer — which understates the model considerably.
+  Ablo's real credential system is a prefix-typed capability class carried in the bearer token,
+  plus an optional scope set, plus an immutable server-side branch binding. All three are
+  authority boundaries and only the first is visible in the spec. There is no OAuth 2.0 and no
+  OIDC surface: /.well-known/openid-configuration and /.well-known/oauth-authorization-server
+  both 404 on the API host, so scopes/ is deliberately not emitted (the scope strings below are
+  key grants, not OAuth scopes).
+summary:
+  types: [http]
+  http_schemes: [bearer]
+  api_key_in: [header]
+  oauth2_flows: []
+  openid_connect: false
+  mtls: false
+schemes:
+  - name: bearerAuth
+    type: http
+    scheme: bearer
+    header: 'Authorization: Bearer <key>'
+    description: Your Ablo API key (sk_… / rk_…).
+    applied: global (every operation in the spec)
+    sources: [openapi/abloatai-api-openapi.yml]
+credential_classes:
+  - prefix: sk_
+    name: trusted runtime secret
+    use: server, worker or agent that can hold a secret; default env var ABLO_API_KEY
+    browser_safe: false
+    note: 'With an empty scope set an sk_ key carries full org authority. Blocked client-side — using one from a browser raises browser_apikey_blocked.'
+  - prefix: rk_
+    name: restricted / delegated runtime
+    use: another runtime that needs only a delegated scope
+    browser_safe: false
+  - prefix: pk_
+    name: publishable browser key
+    use: browser bundle; read-only access to the org data plane
+    browser_safe: true
+    write: false
+  - prefix: ek_
+    name: ephemeral user session
+    use: short-lived, minted server-side and held in browser memory
+    browser_safe: true
+    minted_by: 'POST /v1/ephemeral_keys (mintEphemeralKey) or server.sessions.create()'
+  - prefix: mk_
+    name: project and branch management
+    use: CLI / CI management credential; the only class that can carry management scopes
+    browser_safe: false
+legacy_spellings:
+  - 'sk_live_… / sk_test_… / rk_live_… continue to authenticate during migration'
+  - "The live/test segment is a legacy hint only, not the source of truth; the persisted branch binding controls the key."
+scopes:
+  model: key-grant scopes (NOT OAuth scopes) — least privilege; an empty scope set on an sk_ key means full org authority
+  docs: https://docs.abloatai.com/api-keys#scopes
+  grants:
+    - {scope: 'schema:push', description: 'Author the schema artifact on the key''s bound plane (ablo push, ablo dev).'}
+    - {scope: 'project:manage', description: 'List, create and rename projects.', classes: [mk_]}
+    - {scope: 'branch:manage', description: 'List, create and delete child branches and mint their temporary credentials.', classes: [mk_]}
+    - {scope: 'organization:act-as', description: 'Cross-organization authority to mint a short-lived user session into a customer organization. Follows the Stripe Connect shape; the resulting session is still bounded by its can grant and expiry.'}
+  session_grants:
+    model: 'Per-session typed can grant, e.g. can: { records: [read, update] } — model/verb scoped, applied when minting an ek_ or rk_.'
+authority_axes:
+  - axis: capability class
+    carried_by: key prefix
+  - axis: scope set
+    carried_by: server-side key row
+  - axis: branch binding
+    carried_by: immutable server-side binding
+    note: 'A temporary child-branch key can act only inside that child; it cannot manage siblings or gain root authority even with no scope strings.'
+jwt:
+  supported: true
+  note: >-
+    The error registry documents a full third-party JWT path (jwt_issuer_untrusted,
+    jwt_audience_mismatch, jwt_missing_organization, jwt_org_membership_denied, issuer_register_forbidden),
+    so a customer's own IdP can be registered as a trusted issuer. This is not declared in the OpenAPI.
+  source: https://docs.abloatai.com/errors
+credential_hygiene:
+  - 'A mint returns plaintext exactly once; only a hash is retained, so no API or MCP tool can hand a key back later.'
+  - 'Rotation: POST /v1/capabilities/{id}/rotate (rotateCapability) mints a replacement keeping the grant.'
+  - 'Revocation: DELETE /v1/capabilities/{id} (revokeCapability).'
+failure_signalling:
+  header: X-Auth-Failure
+  cors_exposed: true
+  note: 'The specific auth failure code is echoed on a CORS-exposed response header, so a browser client can distinguish apikey_invalid from auth_no_credentials without reading the body.'
+  observed:
+    - {probe: 'GET https://api.abloatai.com/api/v1/schema (no credential)', http_status: 401, x_auth_failure: auth_no_credentials}
+    - {probe: 'GET https://api.abloatai.com/api/v1/schema (bogus bearer)', http_status: 401, x_auth_failure: apikey_invalid}
+x-evidence:
+  - {url: 'https://docs.abloatai.com/api-keys', http_status: 200}
+  - {url: 'https://api.abloatai.com/.well-known/openid-configuration', http_status: 404}
+  - {url: 'https://api.abloatai.com/.well-known/oauth-authorization-server', http_status: 404}

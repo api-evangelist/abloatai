@@ -1,0 +1,32 @@
+generated: '2026-08-19'
+method: generated
+note: >-
+  One provider-published skill saved verbatim, plus three generated skills for the marquee flows.
+  Every operationId referenced in the generated skills was verified present in
+  openapi/abloatai-api-openapi.yml before it was written.
+skills:
+  - file: ablo-AGENTS.md
+    name: AGENTS.md (provider-published)
+    method: searched
+    source: https://github.com/Abloatai/abloatai/blob/main/packages/abloatai/AGENTS.md
+    description: >-
+      Ablo's own operating instructions for a coding assistant integrating the SDK — scaffold with
+      the CLI rather than hand-writing, read the version-pinned offline docs instead of the website,
+      never run the blocking commands, and follow the read/claim/write loop. Saved verbatim.
+    api: '@abloatai/ablo'
+    note: 'The docs also reference a loadable skill at @abloatai/mcp/skill.md, but that package is not published to npm (404), so it could not be retrieved.'
+  - file: ablo-claim-read-write-release.md
+    name: Claim, read, write, release a shared row
+    method: generated
+    api: openapi/abloatai-api-openapi.yml
+    operations: [getSchema, acquireModelClaim, getClaim, getModelRow, updateModelRow, heartbeatModelClaim, releaseModelClaim]
+  - file: ablo-commit-batch-atomically.md
+    name: Commit a batch of changes atomically
+    method: generated
+    api: openapi/abloatai-api-openapi.yml
+    operations: [commit, getCommit, listCommits, listLogEntries, getLogDelivery]
+  - file: ablo-mint-scoped-agent-credential.md
+    name: Mint a scoped, expiring credential for an agent
+    method: generated
+    api: openapi/abloatai-api-openapi.yml
+    operations: [mintEphemeralKey, mintCapability, getCapability, rotateCapability, revokeCapability, createBranch, mintBranchCredential, getBranchStatus, deleteBranch]

@@ -1,0 +1,78 @@
+generated: '2026-08-19'
+method: searched
+source: https://docs.abloatai.com/webhooks
+spec_type: none
+asyncapi_published: false
+asyncapi_note: >-
+  No AsyncAPI document is published. Ablo has TWO event surfaces — a signed webhook stream and a WSS
+  realtime stream — and neither has a machine-readable event contract; /asyncapi.yaml, /asyncapi.json
+  and the GitHub monorepo all miss. The event catalog below is captured from the prose docs.
+surfaces:
+  - kind: webhooks
+    docs: https://docs.abloatai.com/webhooks
+    description: 'The committed transaction log streamed to your own systems as signed HTTP POSTs.'
+  - kind: websocket
+    transport: WSS
+    description: 'Realtime sync to live clients for optimistic UI (useAblo). Carries the same error envelope as HTTP.'
+    contract: none published
+webhooks:
+  signature_scheme: Standard Webhooks
+  signature_spec: https://www.standardwebhooks.com
+  signature_headers: [webhook-id, webhook-timestamp, webhook-signature]
+  replay_window: 5 minutes
+  verification_note: >-
+    Ablo ships no verification code of its own — you use the open svix or standardwebhooks library.
+    Verify against the RAW request body; frameworks that re-serialize JSON break the signature.
+  secret_prefix: whsec_
+  secret_disclosure: 'Minted once at registration and returned a single time; the CLI writes it to .env.local.'
+  registration:
+    cli: 'npx ablo webhooks create <url> [--events <models>] [--description <label>]'
+    api: 'POST https://api.abloatai.com/api/v1/webhook_endpoints'
+    api_note: >-
+      This endpoint is documented on the webhooks page with a working curl example but is NOT in the
+      published OpenAPI, which covers only 22 paths and does not include webhook_endpoints. The
+      webhook management surface is therefore undiscoverable from the machine-readable contract.
+    endpoint_id_prefix: we_
+    management:
+      - {command: 'ablo webhooks list', does: 'endpoints plus delivery health (status, cursor, last error)'}
+      - {command: 'ablo webhooks roll <id>', does: 'mint a fresh signing secret'}
+      - {command: 'ablo webhooks enable <id>', does: 're-enable a disabled endpoint'}
+      - {command: 'ablo webhooks rm <id>', does: 'remove an endpoint'}
+  delivery:
+    guarantee: at-least-once, in order
+    mechanism: 'Per-endpoint cursor over the log, advancing only on a 2xx. A failed delivery leaves the cursor in place so the same events are re-sent until they land.'
+    batching: 'Every delivery is a batch of events.'
+    ordering_key: syncId
+    ordering_note: 'syncId is a monotonic log position — dedupe AND order by it. Ablo guarantees the order because it owns the log.'
+    ack: 'Any non-2xx (or no response within the timeout) is a failure.'
+    retries: 'immediate, 5s, 5m, 30m, 2h, 5h, 10h, 10h — 8 attempts over roughly 32 hours'
+    auto_disable: 'After the retries exhaust the endpoint is marked disabled and delivery stops until `ablo webhooks enable <id>`.'
+    replay: 'Nothing is lost on failure — the log IS the durable buffer; delivery resumes from the cursor once healthy.'
+  event_envelope:
+    batch_field: data
+    fields:
+      - {field: type, meaning: '"<model>.<verb>" with the model name lowercased, e.g. record.updated'}
+      - {field: model, meaning: 'the model name exactly as declared in your schema — the table to write'}
+      - {field: objectId, meaning: "the changed row's id"}
+      - {field: data, meaning: 'the post-change row, or null on delete'}
+      - {field: syncId, meaning: 'monotonic log position — dedupe and order by this'}
+      - {field: id, meaning: 'String(syncId): the event id'}
+      - {field: createdAt, meaning: 'ISO commit timestamp'}
+    typescript_type: "import type { AbloWebhookEvent } from '@abloatai/abloatai/webhooks'"
+  event_types:
+    pattern: '<model>.<verb>'
+    verbs:
+      - {type: '<model>.created', when: 'a row was inserted'}
+      - {type: '<model>.updated', when: 'a row was updated'}
+      - {type: '<model>.deleted', when: 'a row was deleted (data is null)'}
+      - {type: '<model>.archived', when: 'a row was soft-archived'}
+      - {type: '<model>.unarchived', when: 'a soft-archived row was restored'}
+    scoping: 'enabledEvents defaults to ["*"] (every model). Internal coordination changes (permissions, sync groups) carry NO webhook — only your data models produce events.'
+    dynamic: >-
+      The event type set is a function of the CUSTOMER'S pushed schema, not a fixed provider
+      catalog. That is precisely why an AsyncAPI document would have to be generated per project
+      rather than published once, and is the honest reason none exists.
+  local_testing: 'ablo dev prepares an isolated schema branch but does NOT forward webhook deliveries. Register an HTTPS tunnel URL and remove the endpoint when finished.'
+  alternative: 'ablo connect — Ablo reads your write-ahead log and writes back through a scoped role. The webhook path gives Ablo no database credentials at all.'
+x-evidence:
+  - {url: 'https://docs.abloatai.com/webhooks', http_status: 200}

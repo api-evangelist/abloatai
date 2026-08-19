@@ -1,0 +1,98 @@
+generated: '2026-08-19'
+method: searched
+source: https://docs.abloatai.com/cli
+name: ablo
+package: '@abloatai/cli'
+version: 0.55.0
+published: '2026-08-19'
+repository: https://github.com/Abloatai/abloatai/tree/main/packages/cli
+note: >-
+  The CLI is not an afterthought wrapper around the REST API — it is the primary integration path.
+  Ablo's own AGENTS.md tells a coding assistant "don't hand-write the integration, run the CLI", and
+  several capabilities (schema push, database connect, webhook registration, offline docs) exist
+  only here. It is also unusually agent-aware: the docs mark which commands block forever and which
+  are one-shot, and supply --yes / --no-watch / --no-follow flags specifically so an agent or CI run
+  does not hang.
+install:
+  - {method: npx, command: 'npx ablo <command>', note: 'no install step; the documented default'}
+  - {method: npm, command: 'npm install -D @abloatai/cli'}
+auth:
+  interactive: 'ablo login — browser device flow; the docs explicitly warn an agent NOT to run it because it blocks.'
+  non_interactive: 'set ABLO_API_KEY in the environment; always overrides the stored key'
+  management: ABLO_MANAGEMENT_KEY (CI)
+  config_dir: '~/.config/ablo (or ABLO_CONFIG_DIR / XDG_CONFIG_HOME)'
+environment:
+  - {var: ABLO_API_KEY, purpose: 'Authenticate without ablo login (CI). Always overrides the stored key.'}
+  - {var: ABLO_API_URL, purpose: 'Control-plane / API host (push, dev, status).', default: 'https://api.abloatai.com'}
+  - {var: ABLO_AUTH_URL, purpose: "Dashboard origin for ablo login's device flow.", default: 'https://www.abloatai.com'}
+  - {var: ABLO_CONFIG_DIR, purpose: 'Where the credential file lives.', default: '~/.config/ablo'}
+  - {var: ABLO_WEBHOOK_SECRET, purpose: 'Written by `ablo webhooks create`; used to verify Standard Webhooks signatures.'}
+command_groups:
+  - group: authentication and identity
+    commands:
+      - {command: 'ablo login', does: 'Authorize in the browser; store one project management credential.', flags: ['--project <slug>'], blocking: true}
+      - {command: 'ablo logout', does: 'Remove the stored credentials.'}
+      - {command: 'ablo whoami', does: 'Strictly confirm which project and branch a credential acts on.', flags: ['--key-env <NAME>', '--json']}
+      - {command: 'ablo status', does: 'Active org/project, resolved runtime credential, branch target, and server health.', flags: ['--json']}
+  - group: scaffolding
+    commands:
+      - {command: 'ablo init', does: 'Scaffold ablo/ (schema.ts, client, optional Data Source / agent / component), write .env, install the SDK.', flags: ['--yes', '--framework <nextjs|vite|remix|vanilla>', '--auth <apikey|…>', '--no-agent', '--no-pull', '--no-install', '--no-login'], agent_note: 'Plain `ablo init` needs a TTY and HANGS in an agent/CI run — always pass --yes.'}
+      - {command: 'ablo generate', does: 'Emit TypeScript types from the schema.', flags: ['--out <path>', '--schema', '--export']}
+  - group: projects
+    commands:
+      - {command: 'ablo projects list', does: "List the org's projects, marking the active one and the org-default."}
+      - {command: 'ablo projects create <slug>', does: 'Create a project with isolated keys/schema/data.', flags: ['--name "<display>"']}
+      - {command: 'ablo projects use <slug>', does: 'Switch the active project.'}
+      - {command: 'ablo projects rename', does: 'Rename a project.', flags: ['--name "<display>"']}
+  - group: branches (development isolation)
+    commands:
+      - {command: 'ablo dev', does: 'Ensure an isolated Git branch, wire its temporary key, push, then watch ablo/schema.ts.', flags: ['--branch <slug>', '--branch-ttl-hours <1-168>', '--local', '--source <path>', '--no-watch', '--schema', '--export', '--url'], blocking: true, agent_note: 'Watches forever unless --no-watch.'}
+      - {command: 'ablo branch list|status|check|create|ensure|credential|delete', does: 'Manage and diagnose immutable branch planes and expiring credentials.', flags: ['--json']}
+  - group: schema and database
+    commands:
+      - {command: 'ablo push', does: 'HOSTED — upload the schema to Ablo; the server diffs, migrates, and activates it.', flags: ['--force', '--rename old:new', '--backfill model.field=value', '--schema', '--export', '--url']}
+      - {command: 'ablo connect apply', does: 'Provision scoped roles and logical replication on your Postgres.', flags: ['--url <postgres-url>']}
+      - {command: 'ablo migrate', does: "DIRECT POSTGRES — provision just the synced models plus ablo_outbox / ablo_idempotency in your own DATABASE_URL. Leaves your other tables alone.", flags: ['--dry-run', '--output <file>', '--schema', '--export']}
+      - {command: 'ablo pull', does: 'DIRECT POSTGRES — generate defineSchema(...) from your existing tables, read-only.', flags: ['--out <path>', '--app-schema <name>', '--import <pkg>', '--force'], variants: ['ablo pull prisma [path]', 'ablo pull drizzle <module>']}
+      - {command: 'ablo check', does: 'DIRECT POSTGRES — verify existing tables fit the schema, read-only, no schema changes.', flags: ['--schema <path>', '--export <name>', '--app-schema <name>']}
+  - group: webhooks
+    commands:
+      - {command: 'ablo webhooks create <url>', does: 'Register an endpoint; mints the signing secret once and writes it to .env.local.', flags: ['--events <models>', '--description "<label>"']}
+      - {command: 'ablo webhooks list', does: 'Endpoints plus delivery health (status, cursor, last error).'}
+      - {command: 'ablo webhooks roll <id>', does: 'Mint a fresh signing secret.'}
+      - {command: 'ablo webhooks enable <id>', does: 'Re-enable a disabled endpoint.'}
+      - {command: 'ablo webhooks rm <id>', does: 'Remove an endpoint.'}
+  - group: observability
+    commands:
+      - {command: 'ablo logs', does: "Tail the resolved runtime credential's branch activity.", flags: ['-n, --tail <N>', '--since <dur|ts>', '--model', '--op', '--json', '--no-follow'], blocking: true, agent_note: 'Follows by default — pass --no-follow.'}
+      - {command: 'ablo doctor', does: 'Report whether the last hour of changes was actually deliverable.', added_in: 0.55.0}
+  - group: documentation
+    commands:
+      - {command: 'ablo docs', does: 'List every docs page for the INSTALLED version — offline, no network.', flags: ['--json']}
+      - {command: 'ablo docs <page>', does: 'Print one page.'}
+        
+offline_docs:
+  supported: true
+  note: >-
+    The docs ship inside the installed package, so `npx ablo docs` describes the code actually in
+    node_modules. AGENTS.md tells assistants to read these instead of the docs website, because the
+    website describes the newest release and against a pinned version will hand you a call the
+    package does not have.
+agent_safety:
+  blocking_commands: ['ablo init (without --yes)', 'ablo login', 'ablo dev (without --no-watch)', 'ablo logs (without --no-follow)']
+  one_shot_commands: [status, 'branch check', push, pull, check, generate, docs, 'dev --no-watch', whoami]
+  structured_output: '--json on whoami, status, logs, branch, docs'
+  note: 'Errors are structured (see the Structured errors section of the CLI docs), so a wrapper can branch on a code rather than parse prose.'
+type_mapping:
+  title: Zod to Postgres
+  rows:
+    - {zod: 'z.string()', postgres: TEXT}
+    - {zod: 'z.number()', postgres: 'DOUBLE PRECISION', note: 'never INTEGER — a Zod number may be fractional and truncating is silent data loss'}
+    - {zod: 'z.boolean()', postgres: BOOLEAN}
+    - {zod: 'z.date()', postgres: TIMESTAMPTZ}
+    - {zod: 'z.enum([...])', postgres: 'TEXT + CHECK (col IN (...))'}
+    - {zod: 'z.object / z.array / z.record / z.union / z.custom', postgres: JSONB}
+    - {zod: '.optional() / .nullable()', postgres: nullable column}
+x-evidence:
+  - {url: 'https://docs.abloatai.com/cli', http_status: 200}
+  - {url: 'https://registry.npmjs.org/@abloatai%2Fcli', http_status: 200, latest: 0.55.0}

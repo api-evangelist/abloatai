@@ -1,0 +1,86 @@
+generated: '2026-08-19'
+method: searched
+source: https://docs.abloatai.com/pricing
+pricing_version: '2026-07-31'
+note: >-
+  Ablo publishes a fully specified, machine-checkable pricing page — tier table, rate card, worked
+  examples and the exact usage headers — and states it is generated from the pricing contract so
+  every number is the one the invoice uses. That is materially better than the "contact us" posture
+  typical of infrastructure at this stage.
+model: >-
+  A monthly floor OR metered usage, whichever is greater. Usage is charged AGAINST the floor rather
+  than added to it, so there is no separate subscription line: an org on Scale that sends nothing
+  pays $20, and one that sends four times the floor pays four times the floor.
+plan_count: 3
+currency: USD
+billing_period: monthly
+plans:
+  - name: Free
+    price: 0
+    currency: USD
+    period: monthly
+    included_operations: 100000
+    daily_operations: 10000
+    daily_note: 'A burst guard, not an allowance — it spreads the month over at least 10 days so a runaway agent loop cannot spend it in an afternoon.'
+    connections: 25
+    storage: 1 GiB
+    overage: 'None — a hard stop. Requests past 100K are refused rather than billed, so there is no way to run up a bill without a card.'
+    card_required: false
+    features: {single_sign_on: false, audit_log_export: false, customer_managed_encryption_keys: false, private_networking: false, custom_limits: false}
+  - name: Scale
+    price: 20
+    currency: USD
+    period: monthly
+    included_operations: 10000000
+    daily_operations: null
+    daily_note: 'No daily limit — paid tiers are metered rather than stopped.'
+    connections: 1000
+    storage: 50 GiB
+    overage: 'Metered on the marginal rate card below, charged against the $20 floor.'
+    features: {single_sign_on: false, audit_log_export: true, customer_managed_encryption_keys: false, private_networking: false, custom_limits: false}
+  - name: Enterprise
+    price: 2000
+    price_qualifier: from
+    currency: USD
+    period: monthly
+    included_operations: committed
+    connections: committed
+    storage: committed
+    overage: Priced in the contract.
+    features: {single_sign_on: true, audit_log_export: true, customer_managed_encryption_keys: true, private_networking: true, custom_limits: true, uptime_guarantee: true}
+rate_card:
+  basis: marginal — crossing a band reprices the operations above it and leaves the ones below alone
+  unit: per million operations
+  bands:
+    - {range: first 50M, price_per_million: 2.00}
+    - {range: 50M to 500M, price_per_million: 1.20}
+    - {range: above 500M, price_per_million: 0.60}
+worked_examples:
+  - {monthly_operations: 100000, scale_cost: 20}
+  - {monthly_operations: 1000000, scale_cost: 20}
+  - {monthly_operations: 50000000, scale_cost: 100}
+  - {monthly_operations: 500000000, scale_cost: 640}
+  - {monthly_operations: 1000000000, scale_cost: 940}
+metering:
+  unit: operation
+  meters:
+    - {meter: writes, counts: 'Every change. Add, edit and remove count the same; changing 500 things is 500 operations however they are sent.'}
+    - {meter: model reads, counts: 'Every read the engine answers. Reads a client already has locally never reach us and never count.'}
+    - {meter: claim creates, counts: 'Every time someone takes ownership of a row. Holding and releasing are free.'}
+  rules:
+    - 'Only successful requests count. A rejected or failed request is never metered.'
+    - 'A retry with the same Idempotency-Key counts once — the meter deduplicates on the key the SDK already puts on a write.'
+    - 'Transport-neutral: a write costs the same over HTTP or WebSocket.'
+    - 'Short-lived browser and agent credentials do not create a separate free allowance.'
+  quoted_not_billed:
+    - 'Storage is a ceiling per tier, not a meter.'
+    - 'Concurrent connections are a cap, not a meter — a held socket is a reservation, so it is bounded rather than charged for.'
+usage_visibility:
+  headers: [X-Usage-Limit, X-Usage-Used, X-Usage-Remaining, X-Usage-Reset]
+  note: 'Every metered response carries its own accounting, so an agent can see its position without a dashboard.'
+  alerts: 'Email at 80 percent of a limit and again when reached.'
+  exhaustion_errors:
+    - {code: quota_exceeded, http_status: 429, retryable: true}
+    - {code: connection_limit_exceeded, http_status: 429, retryable: true}
+x-evidence:
+  - {url: 'https://docs.abloatai.com/pricing', http_status: 200}

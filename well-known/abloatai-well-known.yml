@@ -1,0 +1,61 @@
+generated: '2026-08-19'
+method: probed
+source: live GET of each /.well-known/ path on every host in apis.yml and the OpenAPI servers[]
+result: none
+note: >-
+  NO well-known document is served. api.abloatai.com (the OpenAPI servers[0] host) returns a clean
+  JSON 404 for every path — an honest, correctly-typed absence. docs.abloatai.com returns an HTML
+  404 page. www.abloatai.com and abloatai.com return HTTP 200 with the site's Next.js HTML shell for
+  EVERY /.well-known/* path, including paths that cannot exist; those are SPA catch-all soft-200s,
+  not documents, and are recorded as misses. No WellKnown, SecurityTxt or AgentCard pointer is
+  emitted from this probe.
+hosts:
+  - host: https://api.abloatai.com
+    kind: api (OpenAPI servers[0])
+    documents:
+      - {path: /.well-known/security.txt, status: 404}
+      - {path: /.well-known/openid-configuration, status: 404}
+      - {path: /.well-known/oauth-authorization-server, status: 404}
+      - {path: /.well-known/oauth-protected-resource, status: 404}
+      - {path: /.well-known/api-catalog, status: 404}
+      - {path: /.well-known/ai-plugin.json, status: 404}
+      - {path: /.well-known/agent-card.json, status: 404}
+      - {path: /.well-known/agent.json, status: 404}
+  - host: https://docs.abloatai.com
+    kind: docs
+    documents:
+      - {path: /.well-known/security.txt, status: 404}
+      - {path: /.well-known/openid-configuration, status: 404}
+      - {path: /.well-known/oauth-authorization-server, status: 404}
+      - {path: /.well-known/oauth-protected-resource, status: 404}
+      - {path: /.well-known/api-catalog, status: 404}
+      - {path: /.well-known/ai-plugin.json, status: 404}
+      - {path: /.well-known/agent-card.json, status: 404}
+      - {path: /.well-known/agent.json, status: 404}
+  - host: https://www.abloatai.com
+    kind: website (also hosts the public integration-helper MCP endpoint)
+    soft_200: true
+    soft_200_note: 'Next.js SPA catch-all: every path returns 200 with text/html and the same page shell. Treated as a miss on all eight paths.'
+    documents:
+      - {path: /.well-known/security.txt, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/openid-configuration, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/oauth-authorization-server, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/oauth-protected-resource, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/api-catalog, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/ai-plugin.json, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/agent-card.json, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/agent.json, status: 200, document: false, content_type: text/html}
+  - host: https://abloatai.com
+    kind: apex
+    soft_200: true
+    soft_200_note: 'Same SPA catch-all as www. All eight paths recorded as misses.'
+    documents:
+      - {path: /.well-known/security.txt, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/openid-configuration, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/oauth-authorization-server, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/oauth-protected-resource, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/api-catalog, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/ai-plugin.json, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/agent-card.json, status: 200, document: false, content_type: text/html}
+      - {path: /.well-known/agent.json, status: 200, document: false, content_type: text/html}
+documents_found: 0

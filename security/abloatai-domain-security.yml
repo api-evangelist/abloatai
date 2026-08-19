@@ -1,0 +1,44 @@
+generated: '2026-08-19'
+method: probed
+source: live DNS/TLS/HTTP probes of apis.yml + OpenAPI hosts
+hosts:
+- host: docs.abloatai.com
+  https: true
+  tls_version: TLSv1.3
+  cert_expires: Oct 24 08:31:54 2026 GMT
+  hsts: true
+  hsts_max_age: 63072000
+- host: api.abloatai.com
+  https: true
+  tls_version: TLSv1.3
+  cert_expires: Dec 16 23:59:59 2026 GMT
+  hsts: true
+  hsts_max_age: 31536000
+  hsts_include_subdomains: true
+  hsts_note: 'The automated probe recorded hsts: null because the host root returns a JSON 404; a live GET of https://api.abloatai.com/api/v1/schema
+    returns strict-transport-security: max-age=31536000; includeSubDomains. Corrected from direct observation.'
+  security_headers:
+    content-security-policy: default-src 'none'; frame-ancestors 'none'
+    x-content-type-options: nosniff
+    x-frame-options: DENY
+    referrer-policy: strict-origin-when-cross-origin
+    permissions-policy: geolocation=(), microphone=(), camera=()
+domains:
+- domain: abloatai.com
+  dnssec: false
+  caa:
+  - 0 issue "pki.goog"
+  - 0 issue "sectigo.com"
+  - 0 issue "amazon.com"
+  - 0 issue "letsencrypt.org"
+  spf: false
+  dmarc: true
+  dmarc_policy: none
+note: 'Probed with 0-working/probe-domain-security.py, then the api.abloatai.com HSTS field was corrected from a
+  direct observation of a live authenticated-path response. Notable gaps: no DNSSEC and no SPF record on abloatai.com,
+  and DMARC is published at p=none (monitor only), so the domain is not yet protected against spoofing. CAA is present
+  and restrictive.'
+gaps:
+- no DNSSEC
+- no SPF record
+- DMARC policy is p=none (monitoring only, not enforcing)

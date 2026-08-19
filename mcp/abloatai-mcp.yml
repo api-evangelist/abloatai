@@ -1,0 +1,142 @@
+generated: '2026-08-19'
+method: probed
+source: https://www.abloatai.com/api/mcp
+status: published
+note: >-
+  Ablo publishes TWO MCP servers and they are different products. (1) The COORDINATION server
+  (@abloatai/mcp) is the data plane — it renders the model-scoped API as tools and requires an
+  sk_/rk_ API key; it is distributed as an npm package run over stdio, but as of this probe the
+  package name @abloatai/mcp returns 404 from the npm registry, so the documented install command
+  cannot currently be executed. (2) The INTEGRATION-HELPER server is a stateless Streamable-HTTP
+  server the docs describe as customer-mounted at <your-app>/api/mcp — but Ablo also runs its own
+  public instance on its own marketing domain at https://www.abloatai.com/api/mcp, anonymous and
+  reachable right now. That instance is what was probed here.
+deployment:
+  mode: both
+  endpoint: https://www.abloatai.com/api/mcp
+  install: npx -y @abloatai/mcp
+  package: https://www.npmjs.com/package/@abloatai/mcp
+  auth: none
+  verified: probed
+servers:
+  - name: ablo-integration-helper
+    role: docs, schema lint and scaffolding for AI coding assistants
+    transport: http
+    protocol: Streamable HTTP (stateless; POST only, GET returns 405 — SSE unsupported)
+    url: https://www.abloatai.com/api/mcp
+    auth: none
+    verified: probed
+    docs: https://docs.abloatai.com/mcp
+    data_access: none — serves docs, schema lint and scaffolds only; no org-scoped or row data
+    rate_limit:
+      limit: 120
+      window: 1m
+      scope: per-IP
+      headers: [x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset]
+      verified: probed
+    tools_file: mcp/ablo-mcp-tools-list.json
+    counts:
+      tools: 5
+      resources: 44
+      prompts: 3
+  - name: ablo-coordination
+    role: data plane — manage the Ablo account and read/mutate application rows
+    transport: stdio
+    install: npx -y @abloatai/mcp
+    auth: api-key
+    auth_env: ABLO_API_KEY
+    key_prefixes: [sk_, rk_]
+    verified: searched
+    docs: https://docs.abloatai.com/mcp
+    registry_status: >-
+      not published — https://registry.npmjs.org/@abloatai%2Fmcp returned HTTP 404 on 2026-08-19.
+      The @abloatai npm scope carries ablo, cli, humans, transaction and decks, but no mcp package.
+    skill: '@abloatai/mcp/skill.md (referenced by the docs; not resolvable without the package)'
+tools:
+  - name: search_ablo_docs
+    server: ablo-integration-helper
+    description: Keyword search across the docs corpus; returns ranked matches with excerpts.
+    input: [query, limit]
+  - name: get_recipe
+    server: ablo-integration-helper
+    description: Return the full markdown of one doc by name.
+    input: [name]
+  - name: get_api_surface
+    server: ablo-integration-helper
+    description: Return the structured export list for an SDK subpath.
+    input: [subpath]
+  - name: validate_schema
+    server: ablo-integration-helper
+    description: Lint defineSchema source against the DSL rules; runs no code.
+    input: [code]
+  - name: scaffold_app
+    server: ablo-integration-helper
+    description: Emit a starter file tree for a schema-first integration.
+    input: [framework, appName, modelName, storage]
+  - name: get_schema
+    server: ablo-coordination
+    description: The models this key can address, plus its environment and project.
+    mirrors_cli: ablo status
+    source_operation: openapi/abloatai-api-openapi.yml#getSchema
+  - name: list_projects
+    server: ablo-coordination
+    description: List the organization's projects (requires an sk_ key).
+    mirrors_cli: ablo projects list
+  - name: create_project
+    server: ablo-coordination
+    description: Create a project (requires an sk_ key).
+    mirrors_cli: ablo projects create
+  - name: tail_logs
+    server: ablo-coordination
+    description: Recent commits and the actor behind each.
+    mirrors_cli: ablo logs
+    source_operation: openapi/abloatai-api-openapi.yml#listLogEntries
+  - name: get_usage
+    server: ablo-coordination
+    description: Usage in daily buckets.
+  - name: get_model
+    server: ablo-coordination
+    description: Read latest state plus active claims for one row.
+    source_operation: openapi/abloatai-api-openapi.yml#getModelRow
+  - name: list_records
+    server: ablo-coordination
+    description: Cursor-paginated list with filters.
+    source_operation: openapi/abloatai-api-openapi.yml#listModelRows
+  - name: create_model
+    server: ablo-coordination
+    description: Guarded create.
+    source_operation: openapi/abloatai-api-openapi.yml#createModelRow
+  - name: update_model
+    server: ablo-coordination
+    description: Guarded update.
+    source_operation: openapi/abloatai-api-openapi.yml#updateModelRow
+  - name: delete_model
+    server: ablo-coordination
+    description: Guarded delete.
+    source_operation: openapi/abloatai-api-openapi.yml#deleteModelRow
+  - name: claim_model
+    server: ablo-coordination
+    description: Acquire or queue a coordination lease on a row.
+    source_operation: openapi/abloatai-api-openapi.yml#acquireModelClaim
+  - name: release_claim
+    server: ablo-coordination
+    description: Release the lease so others proceed.
+    source_operation: openapi/abloatai-api-openapi.yml#releaseModelClaim
+prompts:
+  - name: integrate-ablo
+    server: ablo-integration-helper
+  - name: add-agent
+    server: ablo-integration-helper
+  - name: define-schema
+    server: ablo-integration-helper
+resources:
+  server: ablo-integration-helper
+  count: 44
+  uri_template: ablo://docs/{name}
+x-evidence:
+  - {url: 'https://www.abloatai.com/api/mcp', method: 'POST tools/list', http_status: 200, content_type: text/event-stream, tools: 5}
+  - {url: 'https://www.abloatai.com/api/mcp', method: 'POST resources/list', http_status: 200, resources: 44}
+  - {url: 'https://www.abloatai.com/api/mcp', method: 'POST prompts/list', http_status: 200, prompts: 3}
+  - {url: 'https://registry.npmjs.org/@abloatai%2Fmcp', http_status: 404, note: coordination server package not published}
+  - {url: 'https://api.abloatai.com/api/mcp', http_status: 404}
+  - {url: 'https://dashboard.abloatai.com/api/mcp', http_status: 404}

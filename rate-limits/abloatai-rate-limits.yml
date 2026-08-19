@@ -1,0 +1,99 @@
+generated: '2026-08-19'
+method: searched
+source: https://docs.abloatai.com/pricing + https://docs.abloatai.com/errors + https://docs.abloatai.com/mcp
+note: >-
+  Ablo signals two different things on two different header families, and they are not the same
+  budget. The X-Usage-* family is the BILLING meter (monthly operations against the tier floor) and
+  is documented on the pricing page. The x-ratelimit-* family is a per-IP request throttle, observed
+  live on the public MCP endpoint. A per-key request-rate limit is documented only by its error
+  (rate_limit_exceeded, with Retry-After) — the numeric value is not published.
+limit_count: 6
+limits:
+  - name: monthly operations (Free)
+    scope: per-organization
+    window: monthly
+    limit: 100000
+    burst: null
+    enforcement: hard stop — requests past it are refused rather than billed
+    tier: Free
+    source: https://docs.abloatai.com/pricing
+  - name: daily operations (Free)
+    scope: per-organization
+    window: daily
+    limit: 10000
+    enforcement: burst guard — spreads the monthly allowance over at least 10 days
+    tier: Free
+    source: https://docs.abloatai.com/pricing
+  - name: monthly operations (Scale)
+    scope: per-organization
+    window: monthly
+    limit: 10000000
+    enforcement: metered above the floor, not stopped
+    tier: Scale
+    source: https://docs.abloatai.com/pricing
+  - name: concurrent WebSocket connections
+    scope: per-principal or per-organization
+    window: concurrent
+    limit: 25
+    tier: Free
+    enforcement: 'connection_limit_exceeded (429, retryable)'
+    source: https://docs.abloatai.com/pricing
+  - name: concurrent WebSocket connections
+    scope: per-principal or per-organization
+    window: concurrent
+    limit: 1000
+    tier: Scale
+    enforcement: 'connection_limit_exceeded (429, retryable)'
+    source: https://docs.abloatai.com/pricing
+  - name: integration-helper MCP requests
+    scope: per-IP
+    window: 1m
+    limit: 120
+    burst: null
+    endpoint: https://www.abloatai.com/api/mcp
+    method: probed
+    enforcement: 'Rate-limit headers echoed on every response.'
+    source: https://docs.abloatai.com/mcp
+undocumented:
+  - name: per-key request rate limit
+    scope: per-api-key
+    limit: null
+    note: >-
+      The error registry documents rate_limit_exceeded — "This API key is sending requests faster
+      than its rate limit allows. Slow down and retry after the delay in the Retry-After header" —
+      so a per-key throttle is enforced, but no numeric limit or window is published anywhere in the
+      docs. An agent cannot budget against it in advance; it can only react to the 429.
+response_headers:
+  billing_meter:
+    scope: 'Documented as present on every metered response.'
+    method: searched
+    headers:
+      - {header: X-Usage-Limit, meaning: operations included in the period, example: '50000000'}
+      - {header: X-Usage-Used, meaning: operations consumed, example: '12480311'}
+      - {header: X-Usage-Remaining, meaning: operations left, example: '37519689'}
+      - {header: X-Usage-Reset, meaning: ISO 8601 timestamp the period rolls over, example: '2026-08-01T00:00:00.000Z'}
+  request_throttle:
+    scope: https://www.abloatai.com/api/mcp
+    method: probed
+    headers:
+      - {header: x-ratelimit-limit, observed_value: '120'}
+      - {header: x-ratelimit-remaining, observed_value: '118'}
+      - {header: x-ratelimit-reset, observed_value: '1787141193', format: unix epoch seconds}
+  retry:
+    method: searched
+    headers:
+      - {header: Retry-After, emitted_on: 'rate_limit_exceeded (429)'}
+exhaustion:
+  status_code: 429
+  codes:
+    - {code: rate_limit_exceeded, http_status: 429, retryable: true, remedy: 'Slow down and retry after the delay in the Retry-After header.'}
+    - {code: quota_exceeded, http_status: 429, retryable: true, remedy: 'Succeeds again once the quota resets or the limit is raised.'}
+    - {code: connection_limit_exceeded, http_status: 429, retryable: true, remedy: 'Close idle connections, or retry once others drain.'}
+  spec_evidence: 'Every one of the 32 operations in the OpenAPI declares a 429 response returning ErrorEnvelope.'
+metering_exemptions:
+  - 'Only successful requests are metered; failures are free.'
+  - 'A retry carrying the same Idempotency-Key is metered once.'
+  - 'Reads served from the client''s local pool never reach the engine and never count.'
+x-evidence:
+  - {url: 'https://docs.abloatai.com/pricing', http_status: 200}
+  - {url: 'https://www.abloatai.com/api/mcp', http_status: 200, note: 'POST tools/list returned x-ratelimit-limit: 120'}

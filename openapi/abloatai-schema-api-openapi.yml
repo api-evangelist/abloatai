@@ -1,0 +1,364 @@
+openapi: 3.2.0
+info:
+  title: Ablo Schema API
+  version: 0.55.0
+  description: 'Ablo collaboration infrastructure: commit, read, and claim. `{model}` is any model from your pushed schema — the routes are the same whichever it is. Authenticate every request with your API key as a Bearer token.'
+  license:
+    name: Apache License 2.0
+    identifier: Apache-2.0
+servers:
+- url: https://api.abloatai.com/api
+  description: Production
+- url: http://localhost:8787/api
+  description: Local development
+security:
+- bearerAuth: []
+tags:
+- name: schema
+paths:
+  /v1/schema:
+    get:
+      tags:
+      - schema
+      summary: What the models look like
+      description: 'The schema deployed on your credential''s branch: every model with its fields, their types, and its relations. Read this when you have no local schema declaration to read types from — it is what makes a field typo a local check rather than a rejected write. Each model carries a content `hash` that moves only when its shape does, so read the shape once and poll the hashes after: a refetch only ever answers a push.'
+      responses:
+        '200':
+          description: 'The deployed schema, or `active: false` when nothing is pushed.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaRead'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: getSchema
+components:
+  schemas:
+    ErrorEnvelope:
+      type: object
+      properties:
+        type:
+          type: string
+        code:
+          type: string
+        param:
+          type: string
+        message:
+          type: string
+        doc_url:
+          type: string
+        request_id:
+          type: string
+        event_id:
+          type: string
+        errors:
+          readOnly: true
+          type: array
+          items:
+            readOnly: true
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              param:
+                type: string
+            required:
+            - message
+            additionalProperties: false
+      required:
+      - type
+      - message
+      additionalProperties: true
+    SchemaRead:
+      oneOf:
+      - type: object
+        properties:
+          active:
+            type: boolean
+            const: false
+          environment:
+            type: string
+          project:
+            anyOf:
+            - type: string
+            - type: 'null'
+          models:
+            readOnly: true
+            type: array
+            items:
+              type: object
+              properties:
+                key:
+                  type: string
+                typename:
+                  type: string
+                conflict:
+                  anyOf:
+                  - type: object
+                    properties:
+                      user:
+                        type: string
+                        enum:
+                        - reject
+                        - overwrite
+                        - notify
+                      agent:
+                        type: string
+                        enum:
+                        - reject
+                        - overwrite
+                        - notify
+                      system:
+                        type: string
+                        enum:
+                        - reject
+                        - overwrite
+                        - notify
+                    additionalProperties: false
+                  - type: 'null'
+                hash:
+                  type: string
+                fields:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - string
+                        - number
+                        - boolean
+                        - date
+                        - enum
+                        - json
+                      isOptional:
+                        type: boolean
+                      isIndexed:
+                        type: boolean
+                      column:
+                        type: string
+                      enumValues:
+                        readOnly: true
+                        type: array
+                        items:
+                          type: string
+                    required:
+                    - type
+                    - isOptional
+                    - isIndexed
+                    additionalProperties: false
+                relations:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - belongsTo
+                        - hasMany
+                        - hasOne
+                      target:
+                        type: string
+                      foreignKey:
+                        type: string
+                    required:
+                    - type
+                    - target
+                    - foreignKey
+                    additionalProperties: false
+              required:
+              - key
+              - typename
+              - conflict
+              - hash
+              additionalProperties: false
+        required:
+        - active
+        - environment
+        - project
+        - models
+        additionalProperties: false
+      - type: object
+        properties:
+          active:
+            type: boolean
+            const: true
+          environment:
+            type: string
+          project:
+            anyOf:
+            - type: string
+            - type: 'null'
+          models:
+            readOnly: true
+            type: array
+            items:
+              type: object
+              properties:
+                key:
+                  type: string
+                typename:
+                  type: string
+                conflict:
+                  anyOf:
+                  - type: object
+                    properties:
+                      user:
+                        type: string
+                        enum:
+                        - reject
+                        - overwrite
+                        - notify
+                      agent:
+                        type: string
+                        enum:
+                        - reject
+                        - overwrite
+                        - notify
+                      system:
+                        type: string
+                        enum:
+                        - reject
+                        - overwrite
+                        - notify
+                    additionalProperties: false
+                  - type: 'null'
+                hash:
+                  type: string
+                fields:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - string
+                        - number
+                        - boolean
+                        - date
+                        - enum
+                        - json
+                      isOptional:
+                        type: boolean
+                      isIndexed:
+                        type: boolean
+                      column:
+                        type: string
+                      enumValues:
+                        readOnly: true
+                        type: array
+                        items:
+                          type: string
+                    required:
+                    - type
+                    - isOptional
+                    - isIndexed
+                    additionalProperties: false
+                relations:
+                  type: object
+                  additionalProperties:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                        - belongsTo
+                        - hasMany
+                        - hasOne
+                      target:
+                        type: string
+                      foreignKey:
+                        type: string
+                    required:
+                    - type
+                    - target
+                    - foreignKey
+                    additionalProperties: false
+              required:
+              - key
+              - typename
+              - conflict
+              - hash
+              additionalProperties: false
+          schemaId:
+            type: string
+          version:
+            type: number
+          hash:
+            type: string
+          pushedAt:
+            anyOf:
+            - type: string
+            - type: 'null'
+        required:
+        - active
+        - environment
+        - project
+        - models
+        - schemaId
+        - version
+        - hash
+        - pushedAt
+        additionalProperties: false
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Your Ablo API key (sk_… / rk_…).

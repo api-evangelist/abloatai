@@ -1,0 +1,514 @@
+openapi: 3.2.0
+info:
+  title: Ablo Logs API
+  version: 0.55.0
+  description: 'Ablo collaboration infrastructure: commit, read, and claim. `{model}` is any model from your pushed schema — the routes are the same whichever it is. Authenticate every request with your API key as a Bearer token.'
+  license:
+    name: Apache License 2.0
+    identifier: Apache-2.0
+servers:
+- url: https://api.abloatai.com/api
+  description: Production
+- url: http://localhost:8787/api
+  description: Local development
+security:
+- bearerAuth: []
+tags:
+- name: logs
+paths:
+  /v1/logs:
+    get:
+      tags:
+      - logs
+      summary: Tail what changed
+      description: How a caller without a socket learns what its peers did. Omit `after` for the most recent entries, then copy each page's `next_cursor` back as `after` to walk forward. Scope is taken from your key — organization, branch and sync groups — so a caller cannot widen what it sees by asking.
+      parameters:
+      - name: after
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      - name: model
+        in: query
+        schema:
+          type: string
+      - name: op
+        in: query
+        schema:
+          type: string
+          enum:
+          - create
+          - update
+          - delete
+          - archive
+          - revive
+          - visible
+          - group_added
+          - group_removed
+      - name: since
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: A page of the feed, oldest first. Entries are discriminated on `object`, so a reader that meets an entry kind it does not know can skip it and keep paging.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogPage'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: listLogEntries
+  /v1/logs/delivery:
+    get:
+      tags:
+      - logs
+      summary: How much of what was recorded could reach anyone
+      description: The fan-out verdict for your plane over a recent window. `recorded` counts the changes the log accepted; `unroutable` counts the ones excluded from delivery because they carried no sync group, which is the state a row reaches when it was written into your database outside Ablo and so carries no tenancy value. Any number above zero means writes are landing that no subscriber is told about.
+      responses:
+        '200':
+          description: The counts, plus the most recent undeliverable change when there is one.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  object:
+                    type: string
+                    const: log_delivery
+                  window_seconds:
+                    type: number
+                  recorded:
+                    type: number
+                  unroutable:
+                    type: number
+                  sample:
+                    anyOf:
+                    - type: object
+                      properties:
+                        model:
+                          type: string
+                        id:
+                          type: string
+                        at:
+                          type: string
+                      required:
+                      - model
+                      - id
+                      - at
+                      additionalProperties: false
+                    - type: 'null'
+                required:
+                - window_seconds
+                - recorded
+                - unroutable
+                additionalProperties: false
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: getLogDelivery
+components:
+  schemas:
+    LogPage:
+      type: object
+      properties:
+        object:
+          type: string
+          const: list
+        data:
+          readOnly: true
+          type: array
+          items:
+            oneOf:
+            - type: object
+              properties:
+                object:
+                  type: string
+                  const: log_event
+                id:
+                  type: number
+                at:
+                  type: string
+                model:
+                  type: string
+                op:
+                  type: string
+                  enum:
+                  - create
+                  - update
+                  - delete
+                  - archive
+                  - revive
+                  - visible
+                  - group_added
+                  - group_removed
+                recordId:
+                  type: string
+                actor:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                delta:
+                  type: object
+                  properties:
+                    id:
+                      type: number
+                    actionType:
+                      type: string
+                      enum:
+                      - I
+                      - U
+                      - D
+                      - A
+                      - V
+                      - C
+                      - G
+                      - S
+                    modelName:
+                      type: string
+                      minLength: 1
+                    modelId:
+                      type: string
+                      minLength: 1
+                    data:
+                      anyOf:
+                      - anyOf:
+                        - type: object
+                          additionalProperties: true
+                        - type: string
+                      - type: 'null'
+                    previousData:
+                      anyOf:
+                      - anyOf:
+                        - type: object
+                          additionalProperties: true
+                        - type: string
+                      - type: 'null'
+                    createdAt:
+                      type: string
+                    actor:
+                      anyOf:
+                      - type: object
+                        properties:
+                          kind:
+                            type: string
+                            enum:
+                            - user
+                            - agent
+                            - system
+                          id:
+                            type: string
+                        required:
+                        - kind
+                        - id
+                        additionalProperties: false
+                      - type: 'null'
+                    onBehalfOf:
+                      anyOf:
+                      - type: object
+                        properties:
+                          kind:
+                            type: string
+                            enum:
+                            - user
+                            - agent
+                            - system
+                          id:
+                            type: string
+                        required:
+                        - kind
+                        - id
+                        additionalProperties: false
+                      - type: 'null'
+                    capabilityId:
+                      anyOf:
+                      - type: string
+                      - type: 'null'
+                    confirmationState:
+                      anyOf:
+                      - type: string
+                        enum:
+                        - auto
+                        - previewed
+                        - approved
+                        - required_human_approval
+                        - auto_historical
+                      - type: 'null'
+                  required:
+                  - id
+                  - actionType
+                  - modelName
+                  - modelId
+                  - data
+                  - createdAt
+                  additionalProperties: false
+              required:
+              - object
+              - id
+              - at
+              - model
+              - op
+              - recordId
+              - actor
+              additionalProperties: false
+            - readOnly: true
+              type: object
+              properties:
+                actor:
+                  type: string
+                participantKind:
+                  type: string
+                  enum:
+                  - user
+                  - agent
+                  - system
+                onBehalfOfId:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                onBehalfOfKind:
+                  anyOf:
+                  - type: string
+                    enum:
+                    - user
+                    - agent
+                    - system
+                  - type: 'null'
+                capabilityId:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                description:
+                  type: string
+                status:
+                  type: string
+                  enum:
+                  - active
+                  - queued
+                  - committed
+                  - expired
+                  - canceled
+                position:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                expiresAt:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                fenceToken:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                target:
+                  readOnly: true
+                  type: object
+                  properties:
+                    model:
+                      type: string
+                    id:
+                      type: string
+                    field:
+                      type: string
+                    fields:
+                      readOnly: true
+                      type: array
+                      items:
+                        type: string
+                    meta:
+                      type: object
+                      additionalProperties: true
+                  required:
+                  - model
+                  - id
+                  additionalProperties: false
+                object:
+                  type: string
+                  const: claim_event
+                seq:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+                at:
+                  type: string
+                claimId:
+                  type: string
+              required:
+              - actor
+              - participantKind
+              - onBehalfOfId
+              - onBehalfOfKind
+              - capabilityId
+              - description
+              - status
+              - expiresAt
+              - target
+              - object
+              - seq
+              - at
+              - claimId
+              additionalProperties: false
+        has_more:
+          type: boolean
+        next_cursor:
+          oneOf:
+          - $ref: '#/components/schemas/Cursor'
+          - type: 'null'
+      required:
+      - object
+      - data
+      - has_more
+      - next_cursor
+      additionalProperties: false
+    ErrorEnvelope:
+      type: object
+      properties:
+        type:
+          type: string
+        code:
+          type: string
+        param:
+          type: string
+        message:
+          type: string
+        doc_url:
+          type: string
+        request_id:
+          type: string
+        event_id:
+          type: string
+        errors:
+          readOnly: true
+          type: array
+          items:
+            readOnly: true
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              param:
+                type: string
+            required:
+            - message
+            additionalProperties: false
+      required:
+      - type
+      - message
+      additionalProperties: true
+    Cursor:
+      type: string
+      description: An opaque pagination position. Copy it unchanged into the next request.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Your Ablo API key (sk_… / rk_…).

@@ -1,0 +1,85 @@
+generated: '2026-08-19'
+method: searched
+source: https://docs.abloatai.com/migration + https://github.com/Abloatai/abloatai/blob/main/CHANGELOG.md + openapi/abloatai-api-openapi.yml
+versioning:
+  scheme: uri-path
+  current: v1
+  base: https://api.abloatai.com/api/v1
+  product_version: 0.55.0
+  product_scheme: semver (pre-1.0)
+  contract_version:
+    value: '2026-08-15'
+    header: Ablo-Version
+    scheme: date-stamped
+    note: 'The error/wire contract is versioned separately from the product semver and echoed on every response.'
+  protocol_version:
+    value: '1'
+    header: Ablo-Protocol-Version
+  observed: 'Both headers returned on a live GET https://api.abloatai.com/api/v1/schema (401).'
+deprecation:
+  policy_url: https://docs.abloatai.com/migration
+  policy_name: Upgrade Guide
+  policy_summary: >-
+    A published safe workflow for upgrading the pre-1.0 SDK. Below 1.0 the minor version is the
+    breaking-change axis. Deprecated spellings are kept working through a migration window rather
+    than removed at the boundary — legacy sk_live_/sk_test_/rk_live_ credentials continue to
+    authenticate, and the deprecated starting_after pagination parameter is "honoured until it is
+    removed".
+  sunset_header: false
+  deprecation_header: false
+  rfc8594: false
+  rfc8594_note: 'No Sunset or Deprecation response headers were observed; deprecation is signalled in the spec and the docs, not at runtime.'
+  in_spec: true
+  deprecated_parameters:
+    - {operation: listModelRows, parameter: starting_after, in: query, replacement: cursor, spec_flag: 'deprecated: true', renamed_in: 0.53.0}
+    - {operation: listBranches, parameter: starting_after, in: query, replacement: cursor, spec_flag: 'deprecated: true', renamed_in: 0.53.0}
+  deprecated_operations: []
+  historical_breaking_changes:
+    - {version: 0.53.0, change: 'The page cursor was renamed starting_after -> cursor; the old spelling remains as a deprecated alias.'}
+    - {version: 0.52.0, change: 'Models carry only id.'}
+    - {version: 0.35.0, change: 'retrieve/list replaced get/getAll/getCount.'}
+release_cadence:
+  releases_observed: 15
+  window: '2026-07-28 to 2026-08-19'
+  latest: {version: 0.55.0, date: '2026-08-19'}
+  note: 'Roughly a release every 1.5 days; API, CLI and all npm packages ship one shared version number.'
+  detail: changelog/ablo-changelog.yml
+sla:
+  url: null
+  uptime_target: null
+  note: >-
+    No public SLA. An uptime guarantee is an Enterprise contract term only — the pricing page lists
+    it under Enterprise ("Committed volume, private networking, and an uptime guarantee") with no
+    published number for Free or Scale.
+  source: https://docs.abloatai.com/pricing
+status_page:
+  url: null
+  found: false
+  note: >-
+    NO status page. status.abloatai.com does not resolve to a page (HTTP 404) and
+    www.abloatai.com/status is a Next.js SPA soft-200 returning the generic marketing shell, not a
+    status surface. There is no Statuspage/Instatus/BetterStack property linked from the docs, the
+    site footer or the GitHub org. The closest thing Ablo ships is self-diagnosis rather than
+    provider transparency — `ablo doctor`, `ablo branch check` and GET /v1/logs/delivery
+    (getLogDelivery) tell you whether YOUR writes reached anyone, which is a genuinely useful
+    signal but reports the customer's plane, not Ablo's platform health.
+  probes:
+    - {url: 'https://status.abloatai.com/', http_status: 404}
+    - {url: 'https://www.abloatai.com/status', http_status: 200, real_page: false, note: 'SPA catch-all — identical title and shell as every other unrouted path'}
+  self_diagnosis_alternatives:
+    - {surface: 'GET /v1/branches/{id}/status', operationId: getBranchStatus, scope: one branch}
+    - {surface: 'GET /v1/logs/delivery', operationId: getLogDelivery, scope: 'how much of what was recorded could reach anyone'}
+    - {surface: 'ablo doctor', scope: 'whether the last hour of changes was deliverable'}
+support:
+  email: support@abloatai.com
+  github_issues: https://github.com/Abloatai/abloatai/issues
+roadmap:
+  url: null
+  found: false
+  note: 'No public roadmap. www.abloatai.com/roadmap is an SPA soft-200, and the GitHub org publishes no roadmap project or milestone board.'
+open_source:
+  repository: https://github.com/Abloatai/ablo
+  license: Apache-2.0
+  license_in_spec: 'info.license {name: Apache License 2.0, identifier: Apache-2.0}'
+  stars: 27
+  note: 'The client monorepo (SDK, CLI, docs) is Apache-2.0 and public; the hosted engine is not.'

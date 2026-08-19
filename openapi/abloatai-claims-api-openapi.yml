@@ -1,0 +1,1358 @@
+openapi: 3.2.0
+info:
+  title: Ablo Claims API
+  version: 0.55.0
+  description: 'Ablo collaboration infrastructure: commit, read, and claim. `{model}` is any model from your pushed schema — the routes are the same whichever it is. Authenticate every request with your API key as a Bearer token.'
+  license:
+    name: Apache License 2.0
+    identifier: Apache-2.0
+servers:
+- url: https://api.abloatai.com/api
+  description: Production
+- url: http://localhost:8787/api
+  description: Local development
+security:
+- bearerAuth: []
+tags:
+- name: claims
+paths:
+  /v1/models/{model}/{id}/claim:
+    post:
+      tags:
+      - claims
+      summary: Claim a row (acquire lease)
+      parameters:
+      - name: model
+        in: path
+        required: true
+        schema:
+          type: string
+        description: A model name from your pushed schema, e.g. `item`.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                claimId:
+                  type: string
+                target:
+                  anyOf:
+                  - type: object
+                    properties:
+                      model:
+                        type: string
+                      id:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      field:
+                        type: string
+                      fields:
+                        readOnly: true
+                        type: array
+                        items:
+                          type: string
+                      meta:
+                        type: object
+                        additionalProperties: true
+                  - type: 'null'
+                reason:
+                  type: string
+                description:
+                  type: string
+                meta:
+                  type: object
+                  additionalProperties: true
+                ttl:
+                  anyOf:
+                  - anyOf:
+                    - type: number
+                      exclusiveMinimum: 0
+                    - type: string
+                      pattern: ^(\d+(?:\.\d+)?)(ms|s|m|h)$
+                  - type: 'null'
+                queue:
+                  type: boolean
+      responses:
+        '201':
+          description: The lease is yours. `claim.fenceToken` is set when the coordinator minted one; carry it on writes made under the lease.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimAcquire'
+        '202':
+          description: The row was already held and you asked to queue. You are in line at `position` — heartbeat to keep the slot, and poll `GET /v1/claims/{claimId}` for the grant.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimAcquire'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: acquireModelClaim
+    delete:
+      tags:
+      - claims
+      summary: Release a claim
+      parameters:
+      - name: model
+        in: path
+        required: true
+        schema:
+          type: string
+        description: A model name from your pushed schema, e.g. `item`.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Released
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimRelease'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: releaseModelClaim
+  /v1/models/{model}/{id}/claim/heartbeat:
+    post:
+      tags:
+      - claims
+      summary: Heartbeat a held claim (extend the lease for long-running work)
+      parameters:
+      - name: model
+        in: path
+        required: true
+        schema:
+          type: string
+        description: A model name from your pushed schema, e.g. `item`.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                claimId:
+                  type: string
+                ttl:
+                  anyOf:
+                  - anyOf:
+                    - type: number
+                      exclusiveMinimum: 0
+                    - type: string
+                      pattern: ^(\d+(?:\.\d+)?)(ms|s|m|h)$
+                  - type: 'null'
+                details:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Lease extended (or queued slot refreshed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimHeartbeat'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: heartbeatModelClaim
+  /v1/models/{model}/{id}/claim/reorder:
+    post:
+      tags:
+      - claims
+      summary: Reorder the wait-line (privileged)
+      description: Name the waiters you want at the front, in the order you want them. Waiters you leave out keep their relative places behind them.
+      parameters:
+      - name: model
+        in: path
+        required: true
+        schema:
+          type: string
+        description: A model name from your pushed schema, e.g. `item`.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  readOnly: true
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      heldBy:
+                        type: string
+                      claimId:
+                        type: string
+                    required:
+                    - heldBy
+                    - claimId
+      responses:
+        '200':
+          description: Reordered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimReorder'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: reorderModelClaimQueue
+  /v1/claims:
+    get:
+      tags:
+      - claims
+      summary: List who holds what, and who waits
+      description: 'The coordination view: scope to a row with `model` and `id`, to a participant with `actorId`, `actorKind`, `onBehalfOfId` or `capabilityId`, or combine them. `queue` is populated only when the request names both `model` and `id` — a wait line belongs to one row.'
+      parameters:
+      - name: model
+        in: query
+        schema:
+          type: string
+      - name: id
+        in: query
+        schema:
+          type: string
+      - name: field
+        in: query
+        schema:
+          type: string
+      - name: actorId
+        in: query
+        schema:
+          type: string
+      - name: actorKind
+        in: query
+        schema:
+          type: string
+          enum:
+          - user
+          - agent
+          - system
+      - name: onBehalfOfId
+        in: query
+        schema:
+          type: string
+      - name: capabilityId
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Live claims, and the wait line behind the named row.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimList'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: listClaims
+    post:
+      tags:
+      - claims
+      summary: Claim a row named in the body
+      description: The same operation as `POST /v1/models/{model}/{id}/claim`, with the row in `target` instead of the URL. Answers identically.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                claimId:
+                  type: string
+                target:
+                  anyOf:
+                  - type: object
+                    properties:
+                      model:
+                        type: string
+                      id:
+                        anyOf:
+                        - type: string
+                        - type: 'null'
+                      field:
+                        type: string
+                      fields:
+                        readOnly: true
+                        type: array
+                        items:
+                          type: string
+                      meta:
+                        type: object
+                        additionalProperties: true
+                  - type: 'null'
+                reason:
+                  type: string
+                description:
+                  type: string
+                meta:
+                  type: object
+                  additionalProperties: true
+                ttl:
+                  anyOf:
+                  - anyOf:
+                    - type: number
+                      exclusiveMinimum: 0
+                    - type: string
+                      pattern: ^(\d+(?:\.\d+)?)(ms|s|m|h)$
+                  - type: 'null'
+                queue:
+                  type: boolean
+      responses:
+        '201':
+          description: The lease is yours.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimAcquire'
+        '202':
+          description: Already held, and you asked to queue. You are in line at `position`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimAcquire'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: acquireClaim
+  /v1/claims/heartbeat:
+    post:
+      tags:
+      - claims
+      summary: Heartbeat every lease you hold, in one request
+      description: One round trip per cadence for a worker holding many rows, instead of one per row. Takes only `ttl`; the leases are whichever ones your credential holds on this branch.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                claimId:
+                  type: string
+                ttl:
+                  anyOf:
+                  - anyOf:
+                    - type: number
+                      exclusiveMinimum: 0
+                    - type: string
+                      pattern: ^(\d+(?:\.\d+)?)(ms|s|m|h)$
+                  - type: 'null'
+                details:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: One ack per lease extended.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimHeartbeatBatch'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: heartbeatClaims
+  /v1/claims/{claimId}:
+    get:
+      tags:
+      - claims
+      summary: Poll a claim for its current state
+      description: How a caller without a persistent connection learns its queued claim was granted. `position` is advisory — a privileged reorder can move it up — so branch on `status`, never on position.
+      parameters:
+      - name: claimId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The claim state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimState'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: getClaim
+    delete:
+      tags:
+      - claims
+      summary: Release a claim, or leave the wait line
+      description: 'The same call for both: releasing a held lease and abandoning a queued position are one operation, because a queue entry is a lease in a different state.'
+      parameters:
+      - name: claimId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Released
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimRelease'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: releaseClaim
+  /v1/claims/{claimId}/heartbeat:
+    post:
+      tags:
+      - claims
+      summary: Heartbeat a claim by id — held or queued
+      description: 'Keep a held or queued claim active. Branch on the returned status: `queued` is still waiting and `held` has been granted. Retrieve the claim after a grant before writing.'
+      parameters:
+      - name: claimId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                claimId:
+                  type: string
+                ttl:
+                  anyOf:
+                  - anyOf:
+                    - type: number
+                      exclusiveMinimum: 0
+                    - type: string
+                      pattern: ^(\d+(?:\.\d+)?)(ms|s|m|h)$
+                  - type: 'null'
+                details:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Lease extended, or queued slot refreshed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClaimHeartbeat'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: heartbeatClaim
+components:
+  schemas:
+    Cursor:
+      type: string
+      description: An opaque pagination position. Copy it unchanged into the next request.
+    Claim:
+      readOnly: true
+      type: object
+      properties:
+        id:
+          type: string
+        actor:
+          type: string
+        participantKind:
+          type: string
+          enum:
+          - user
+          - agent
+          - system
+        onBehalfOfId:
+          anyOf:
+          - type: string
+          - type: 'null'
+        onBehalfOfKind:
+          anyOf:
+          - type: string
+            enum:
+            - user
+            - agent
+            - system
+          - type: 'null'
+        capabilityId:
+          anyOf:
+          - type: string
+          - type: 'null'
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - active
+          - queued
+        position:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        expiresAt:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        fenceToken:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        target:
+          readOnly: true
+          type: object
+          properties:
+            model:
+              type: string
+            id:
+              type: string
+            field:
+              type: string
+            fields:
+              readOnly: true
+              type: array
+              items:
+                type: string
+            meta:
+              type: object
+              additionalProperties: true
+          required:
+          - model
+          - id
+          additionalProperties: false
+        meta:
+          type: object
+          additionalProperties: true
+        field:
+          type: string
+      required:
+      - id
+      - actor
+      - participantKind
+      - expiresAt
+      - target
+      additionalProperties: false
+    ClaimState:
+      type: object
+      properties:
+        id:
+          type: string
+        position:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        expiresAt:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        fenceToken:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        object:
+          type: string
+          const: claim
+        status:
+          type: string
+          enum:
+          - active
+          - queued
+          - committed
+          - expired
+          - canceled
+      required:
+      - id
+      - object
+      - status
+      additionalProperties: false
+    ClaimHeartbeat:
+      type: object
+      properties:
+        object:
+          type: string
+          const: claim_heartbeat
+        claimId:
+          type: string
+        status:
+          type: string
+          enum:
+          - held
+          - queued
+        expiresAt:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        queueDepth:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        position:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+      required:
+      - object
+      - claimId
+      - status
+      additionalProperties: false
+    ErrorEnvelope:
+      type: object
+      properties:
+        type:
+          type: string
+        code:
+          type: string
+        param:
+          type: string
+        message:
+          type: string
+        doc_url:
+          type: string
+        request_id:
+          type: string
+        event_id:
+          type: string
+        errors:
+          readOnly: true
+          type: array
+          items:
+            readOnly: true
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              param:
+                type: string
+            required:
+            - message
+            additionalProperties: false
+      required:
+      - type
+      - message
+      additionalProperties: true
+    ClaimAcquired:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: claim
+        status:
+          type: string
+          const: active
+        fenceToken:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        expiresAt:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        claim:
+          $ref: '#/components/schemas/Claim'
+      required:
+      - id
+      - object
+      - status
+      - claim
+      additionalProperties: false
+    ClaimQueued:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: claim
+        status:
+          type: string
+          const: queued
+        position:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        heldBy:
+          type: string
+        expiresAt:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        heldByClaim:
+          type: object
+          properties:
+            entityType:
+              type: string
+            entityId:
+              type: string
+            field:
+              type: string
+            fields:
+              readOnly: true
+              type: array
+              items:
+                type: string
+            meta:
+              type: object
+              additionalProperties: true
+            claimId:
+              type: string
+            description:
+              type: string
+            declaredAt:
+              type: number
+            expiresAt:
+              type: number
+            onBehalfOfId:
+              anyOf:
+              - type: string
+              - type: 'null'
+            onBehalfOfKind:
+              anyOf:
+              - type: string
+                enum:
+                - user
+                - agent
+                - system
+              - type: 'null'
+            capabilityId:
+              anyOf:
+              - type: string
+              - type: 'null'
+          required:
+          - entityType
+          - entityId
+          - claimId
+          - declaredAt
+          - expiresAt
+          additionalProperties: false
+      required:
+      - id
+      - object
+      - status
+      - position
+      additionalProperties: false
+    ClaimRelease:
+      type: object
+      properties:
+        object:
+          type: string
+          const: claim_release
+        released:
+          type: boolean
+      required:
+      - object
+      - released
+      additionalProperties: false
+    ClaimList:
+      type: object
+      properties:
+        object:
+          type: string
+          const: list
+        data:
+          readOnly: true
+          type: array
+          items:
+            $ref: '#/components/schemas/Claim'
+        has_more:
+          type: boolean
+        next_cursor:
+          oneOf:
+          - $ref: '#/components/schemas/Cursor'
+          - type: 'null'
+      required:
+      - object
+      - data
+      - has_more
+      - next_cursor
+      additionalProperties: false
+    ClaimHeartbeatBatch:
+      type: object
+      properties:
+        object:
+          type: string
+          const: list
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              claimId:
+                type: string
+              status:
+                type: string
+                enum:
+                - held
+                - queued
+                - lost
+              expiresAt:
+                type: number
+              position:
+                type: number
+              queueDepth:
+                type: number
+            required:
+            - claimId
+            - status
+            additionalProperties: false
+      required:
+      - object
+      - results
+      additionalProperties: false
+    ClaimReorder:
+      type: object
+      properties:
+        object:
+          type: string
+          const: claim_reorder
+        reordered:
+          type: boolean
+      required:
+      - object
+      - reordered
+      additionalProperties: false
+    ClaimAcquire:
+      oneOf:
+      - $ref: '#/components/schemas/ClaimAcquired'
+      - $ref: '#/components/schemas/ClaimQueued'
+      discriminator:
+        propertyName: status
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Your Ablo API key (sk_… / rk_…).

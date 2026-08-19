@@ -1,0 +1,55 @@
+generated: '2026-08-19'
+method: searched
+source: https://docs.abloatai.com/branch-development + https://docs.abloatai.com/api-keys + https://docs.abloatai.com/deployment
+model: branch-isolation
+note: >-
+  Ablo has NO shared sandbox mode and says so explicitly. There is no test-vs-live key pair, no
+  magic test values and no fixture generator. Isolation is achieved structurally instead: every Git
+  branch gets its own immutable Ablo branch plane with its own schema and its own expiring
+  credential, and Production is simply the protected root of that same tree. This is a real testing
+  story — arguably a stronger one than test-mode keys, because a branch is a full plane rather than
+  a parallel universe with different behaviour — but it means an evaluator cannot make a call
+  against Ablo without an account.
+shared_sandbox: false
+shared_sandbox_quote: 'The branch uses a throwaway hosted data plane; Production remains the protected root. There is no shared Sandbox mode.'
+test_credentials:
+  model: expiring branch-bound credentials, not test-mode keys
+  mint_cli: 'npx ablo dev --no-watch --branch <git-or-ci-ref>'
+  mint_api: 'POST /v1/branches/{id}/credentials (mintBranchCredential) — "Mint an expiring branch-bound test credential"'
+  ttl_flag: '--branch-ttl-hours <1-168>'
+  written_to: '.env.local (gitignored) as ABLO_API_KEY'
+  prefix: sk_
+  note: 'The prefix is the same as production. The plane binding, not the prefix, is what makes it safe.'
+legacy_test_mode:
+  exists: true
+  deprecated: true
+  detail: >-
+    Older sk_live_… / sk_test_… / rk_live_… spellings still authenticate during migration, but the
+    docs state the live/test segment is "a legacy hint, not the source of truth" — the persisted
+    branch binding controls the key. Rotation mints the current unsegmented spelling. Do not treat
+    sk_test_ as a sandbox signal on this provider.
+free_tier_as_evaluation:
+  plan: Free
+  price: 0
+  card_required: false
+  operations: 100000/month, 10000/day
+  quote: 'Build against the real engine without a card.'
+  note: 'The Free tier, not a sandbox, is the intended evaluation path — real engine, hard-stopped quota, no billing risk.'
+local_development:
+  postgres: 'ablo dev --local serves a local Postgres over an outbound signed connector.'
+  api_host_override: 'ABLO_API_URL points the CLI at a different control plane.'
+  openapi_local_server: 'The published OpenAPI declares http://localhost:8787/api as a second server ("Local development"), so a local engine exists, though the docs do not document running it standalone.'
+  read_only_verification: 'ablo check reports the live column-by-column fit read-only, before anything runs.'
+  dry_run: 'ablo migrate --dry-run'
+webhook_testing:
+  local_forwarding: false
+  note: '`ablo dev` prepares an isolated schema branch but does NOT forward webhook deliveries. You must register an HTTPS tunnel URL and remove the endpoint afterwards.'
+sdk_testing:
+  subpath: '@abloatai/abloatai/testing'
+  note: 'A ./testing export exists on the SDK (listed in the MCP get_api_surface subpaths); its contents are not documented on the public docs site.'
+magic_test_values: []
+magic_test_values_note: 'None published — Ablo has no cards, accounts or identifiers to simulate; the product coordinates the customer''s own rows.'
+x-evidence:
+  - {url: 'https://docs.abloatai.com/branch-development', http_status: 200}
+  - {url: 'https://docs.abloatai.com/api-keys', http_status: 200}
+  - {url: 'https://docs.abloatai.com/pricing', http_status: 200}

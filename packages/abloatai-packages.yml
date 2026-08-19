@@ -1,0 +1,84 @@
+generated: '2026-08-19'
+method: searched
+source: https://registry.npmjs.org/-/v1/search?text=abloatai + https://docs.abloatai.com/cli + https://github.com/Abloatai/ablo
+note: >-
+  The whole @abloatai scope is a single monorepo (github.com/Abloatai/ablo) released in lockstep —
+  ablo, cli, humans and transaction all sat at 0.55.0 published 2026-08-19, the same version the
+  live OpenAPI declares (info.version 0.55.0). SDK currency is therefore exact rather than lagging.
+  The documented MCP coordination package @abloatai/mcp is NOT on npm (404), so it is recorded here
+  as an unpublished gap rather than a package.
+packages:
+  - language: typescript
+    registry: npm
+    name: '@abloatai/ablo'
+    url: https://www.npmjs.com/package/@abloatai/ablo
+    install: npm install @abloatai/ablo
+    official: true
+    version: 0.55.0
+    published: '2026-08-19'
+    releases: 87
+    repository: https://github.com/Abloatai/abloatai/tree/main/packages/ablo
+    description: The public Ablo SDK for coordinated reads, commits, claims, observation, and reactive applications.
+    subpaths: ['@abloatai/ablo', ./schema, ./react, ./webhooks, ./testing]
+  - language: typescript
+    registry: npm
+    name: '@abloatai/cli'
+    url: https://www.npmjs.com/package/@abloatai/cli
+    install: npx ablo
+    official: true
+    version: 0.55.0
+    published: '2026-08-19'
+    releases: 21
+    repository: https://github.com/Abloatai/abloatai/tree/main/packages/cli
+    description: 'The ablo command line: set up Ablo, connect your database, and push your schema from the terminal.'
+    binary: ablo
+  - language: typescript
+    registry: npm
+    name: '@abloatai/transaction'
+    url: https://www.npmjs.com/package/@abloatai/transaction
+    install: npm install @abloatai/transaction
+    official: true
+    version: 0.55.0
+    published: '2026-08-19'
+    repository: https://github.com/Abloatai/abloatai/tree/main/packages/transaction
+    description: The headless Ablo transaction client and canonical contracts for reads, commits, confirmation, claims, and durable observation.
+  - language: typescript
+    registry: npm
+    name: '@abloatai/humans'
+    url: https://www.npmjs.com/package/@abloatai/humans
+    install: npm install @abloatai/humans
+    official: true
+    version: 0.55.0
+    published: '2026-08-19'
+    repository: https://github.com/Abloatai/abloatai/tree/main/packages/humans
+    description: 'The optional human-facing local-state package for Ablo: presence, live queries, and React bindings.'
+  - language: typescript
+    registry: npm
+    name: '@abloatai/decks'
+    url: https://www.npmjs.com/package/@abloatai/decks
+    install: npm install @abloatai/decks
+    official: true
+    version: 0.3.0
+    published: '2026-06-17'
+    repository: https://github.com/Abloatai/decks
+    description: Build Ablo slide decks from code — a typed resource API.
+    note: 'Separate repo, off the monorepo release train, and two months behind the rest of the scope. Not part of the API client surface.'
+unpublished:
+  - name: '@abloatai/mcp'
+    documented_at: https://docs.abloatai.com/mcp
+    documented_install: npx -y @abloatai/mcp
+    version: null
+    published: null
+    registry_status: 404
+    probed: 'https://registry.npmjs.org/@abloatai%2Fmcp on 2026-08-19'
+    note: >-
+      Ablo's MCP page documents this package as the coordination server (the data plane) and points
+      a loadable agent skill at @abloatai/mcp/skill.md, but the package does not exist on npm and
+      there is no packages/mcp directory in the public monorepo. The documented install command
+      fails. This is the single largest documentation-vs-shipped gap on the provider.
+languages_covered: [typescript, javascript]
+missing_languages: [python, go, ruby, java, php, rust, dotnet]
+missing_note: >-
+  No first-party client outside the JS/TS ecosystem. The docs cover a Python backend
+  (https://docs.abloatai.com/examples/existing-python-backend) by calling the REST API directly
+  rather than through an SDK; registry searches on PyPI naming turned up no first-party package.

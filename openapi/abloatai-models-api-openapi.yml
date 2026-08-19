@@ -1,0 +1,1705 @@
+openapi: 3.2.0
+info:
+  title: Ablo Models API
+  version: 0.55.0
+  description: 'Ablo collaboration infrastructure: commit, read, and claim. `{model}` is any model from your pushed schema — the routes are the same whichever it is. Authenticate every request with your API key as a Bearer token.'
+  license:
+    name: Apache License 2.0
+    identifier: Apache-2.0
+servers:
+- url: https://api.abloatai.com/api
+  description: Production
+- url: http://localhost:8787/api
+  description: Local development
+security:
+- bearerAuth: []
+tags:
+- name: models
+paths:
+  /v1/models/{model}:
+    get:
+      tags:
+      - models
+      summary: List rows of a model
+      parameters:
+      - name: model
+        in: path
+        required: true
+        schema:
+          type: string
+        description: A model name from your pushed schema, e.g. `item`.
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      - name: order_by
+        in: query
+        schema:
+          type: string
+      - name: order
+        in: query
+        schema:
+          type: string
+          enum:
+          - asc
+          - desc
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: starting_after
+        in: query
+        deprecated: true
+        schema:
+          type: string
+        description: Deprecated spelling of cursor, honoured until it is removed. Send cursor.
+      responses:
+        '200':
+          description: A page of rows. `next_cursor` feeds `cursor` on the next call; `stamp` is the watermark the page was read at.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelPage'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: listModelRows
+    post:
+      tags:
+      - models
+      summary: Create a row
+      description: The record travels in `data`; `id` is yours to choose — see the field for the derivation that makes a retry idempotent.
+      parameters:
+      - name: model
+        in: path
+        required: true
+        schema:
+          type: string
+        description: A model name from your pushed schema, e.g. `item`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  anyOf:
+                  - type: object
+                    additionalProperties: true
+                  - type: 'null'
+                id:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                claim:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                onStale:
+                  anyOf:
+                  - type: string
+                    enum:
+                    - reject
+                    - overwrite
+                    - notify
+                  - type: 'null'
+                readAt:
+                  anyOf:
+                  - type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  - type: 'null'
+                reads:
+                  anyOf:
+                  - maxItems: 500
+                    type: array
+                    items:
+                      anyOf:
+                      - type: object
+                        properties:
+                          model:
+                            type: string
+                          id:
+                            type: string
+                          fields:
+                            readOnly: true
+                            type: array
+                            items:
+                              type: string
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - overwrite
+                            - notify
+                        required:
+                        - model
+                        - id
+                        - readAt
+                      - type: object
+                        properties:
+                          group:
+                            type: string
+                            pattern: ^[a-z][a-z0-9_]*:[\s\S]{1,}$
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - overwrite
+                            - notify
+                        required:
+                        - group
+                        - readAt
+                  - type: 'null'
+                track:
+                  anyOf:
+                  - maxItems: 500
+                    type: array
+                    items:
+                      anyOf:
+                      - type: object
+                        properties:
+                          model:
+                            type: string
+                          id:
+                            type: string
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - notify
+                        required:
+                        - model
+                        - id
+                      - type: object
+                        properties:
+                          group:
+                            type: string
+                            pattern: ^[a-z][a-z0-9_]*:[\s\S]{1,}$
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - notify
+                        required:
+                        - group
+                  - type: 'null'
+                fenceToken:
+                  anyOf:
+                  - type: number
+                  - type: 'null'
+                idempotencyKey:
+                  type: string
+      responses:
+        '200':
+          description: Commit receipt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitReceipt'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: createModelRow
+  /v1/models/{model}/{id}:
+    get:
+      tags:
+      - models
+      summary: Retrieve a row
+      parameters:
+      - name: model
+        in: path
+        required: true
+        schema:
+          type: string
+        description: A model name from your pushed schema, e.g. `item`.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The row, with the watermark it was read at and who holds it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelRead'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: getModelRow
+    patch:
+      tags:
+      - models
+      summary: Update a row
+      description: 'Pass `claim` and `readAt` together: the lease says nobody else is writing, the watermark says the row has not moved since you read it.'
+      parameters:
+      - name: model
+        in: path
+        required: true
+        schema:
+          type: string
+        description: A model name from your pushed schema, e.g. `item`.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  anyOf:
+                  - type: object
+                    additionalProperties: true
+                  - type: 'null'
+                id:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                claim:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                onStale:
+                  anyOf:
+                  - type: string
+                    enum:
+                    - reject
+                    - overwrite
+                    - notify
+                  - type: 'null'
+                readAt:
+                  anyOf:
+                  - type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  - type: 'null'
+                reads:
+                  anyOf:
+                  - maxItems: 500
+                    type: array
+                    items:
+                      anyOf:
+                      - type: object
+                        properties:
+                          model:
+                            type: string
+                          id:
+                            type: string
+                          fields:
+                            readOnly: true
+                            type: array
+                            items:
+                              type: string
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - overwrite
+                            - notify
+                        required:
+                        - model
+                        - id
+                        - readAt
+                      - type: object
+                        properties:
+                          group:
+                            type: string
+                            pattern: ^[a-z][a-z0-9_]*:[\s\S]{1,}$
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - overwrite
+                            - notify
+                        required:
+                        - group
+                        - readAt
+                  - type: 'null'
+                track:
+                  anyOf:
+                  - maxItems: 500
+                    type: array
+                    items:
+                      anyOf:
+                      - type: object
+                        properties:
+                          model:
+                            type: string
+                          id:
+                            type: string
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - notify
+                        required:
+                        - model
+                        - id
+                      - type: object
+                        properties:
+                          group:
+                            type: string
+                            pattern: ^[a-z][a-z0-9_]*:[\s\S]{1,}$
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - notify
+                        required:
+                        - group
+                  - type: 'null'
+                fenceToken:
+                  anyOf:
+                  - type: number
+                  - type: 'null'
+                idempotencyKey:
+                  type: string
+      responses:
+        '200':
+          description: Commit receipt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitReceipt'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: updateModelRow
+    delete:
+      tags:
+      - models
+      summary: Delete a row
+      parameters:
+      - name: model
+        in: path
+        required: true
+        schema:
+          type: string
+        description: A model name from your pushed schema, e.g. `item`.
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  anyOf:
+                  - type: object
+                    additionalProperties: true
+                  - type: 'null'
+                id:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                claim:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+                onStale:
+                  anyOf:
+                  - type: string
+                    enum:
+                    - reject
+                    - overwrite
+                    - notify
+                  - type: 'null'
+                readAt:
+                  anyOf:
+                  - type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  - type: 'null'
+                reads:
+                  anyOf:
+                  - maxItems: 500
+                    type: array
+                    items:
+                      anyOf:
+                      - type: object
+                        properties:
+                          model:
+                            type: string
+                          id:
+                            type: string
+                          fields:
+                            readOnly: true
+                            type: array
+                            items:
+                              type: string
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - overwrite
+                            - notify
+                        required:
+                        - model
+                        - id
+                        - readAt
+                      - type: object
+                        properties:
+                          group:
+                            type: string
+                            pattern: ^[a-z][a-z0-9_]*:[\s\S]{1,}$
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - overwrite
+                            - notify
+                        required:
+                        - group
+                        - readAt
+                  - type: 'null'
+                track:
+                  anyOf:
+                  - maxItems: 500
+                    type: array
+                    items:
+                      anyOf:
+                      - type: object
+                        properties:
+                          model:
+                            type: string
+                          id:
+                            type: string
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - notify
+                        required:
+                        - model
+                        - id
+                      - type: object
+                        properties:
+                          group:
+                            type: string
+                            pattern: ^[a-z][a-z0-9_]*:[\s\S]{1,}$
+                          readAt:
+                            type: integer
+                            minimum: 0
+                            maximum: 9007199254740991
+                          onStale:
+                            type: string
+                            enum:
+                            - reject
+                            - notify
+                        required:
+                        - group
+                  - type: 'null'
+                fenceToken:
+                  anyOf:
+                  - type: number
+                  - type: 'null'
+                idempotencyKey:
+                  type: string
+      responses:
+        '200':
+          description: Commit receipt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommitReceipt'
+        '400':
+          description: The request did not satisfy the published contract.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '401':
+          description: The Bearer credential is missing, malformed, or expired.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '403':
+          description: The credential does not authorize this operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '404':
+          description: The addressed resource does not exist in the credential scope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '409':
+          description: The request conflicts with current claim, version, or idempotency state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '429':
+          description: The caller exceeded an enforced rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: The server could not complete the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '503':
+          description: A required service is temporarily unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        default:
+          description: An HTTP error not otherwise listed; decoded through the canonical envelope.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      operationId: deleteModelRow
+components:
+  schemas:
+    ModelRead:
+      type: object
+      properties:
+        object:
+          type: string
+          const: model
+        model:
+          type: string
+        id:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        stamp:
+          type: number
+        claims:
+          readOnly: true
+          type: array
+          items:
+            $ref: '#/components/schemas/Claim'
+      required:
+      - object
+      - model
+      - id
+      - data
+      - stamp
+      - claims
+      additionalProperties: false
+    Cursor:
+      type: string
+      description: An opaque pagination position. Copy it unchanged into the next request.
+    Claim:
+      readOnly: true
+      type: object
+      properties:
+        id:
+          type: string
+        actor:
+          type: string
+        participantKind:
+          type: string
+          enum:
+          - user
+          - agent
+          - system
+        onBehalfOfId:
+          anyOf:
+          - type: string
+          - type: 'null'
+        onBehalfOfKind:
+          anyOf:
+          - type: string
+            enum:
+            - user
+            - agent
+            - system
+          - type: 'null'
+        capabilityId:
+          anyOf:
+          - type: string
+          - type: 'null'
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+          - active
+          - queued
+        position:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        expiresAt:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        fenceToken:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        target:
+          readOnly: true
+          type: object
+          properties:
+            model:
+              type: string
+            id:
+              type: string
+            field:
+              type: string
+            fields:
+              readOnly: true
+              type: array
+              items:
+                type: string
+            meta:
+              type: object
+              additionalProperties: true
+          required:
+          - model
+          - id
+          additionalProperties: false
+        meta:
+          type: object
+          additionalProperties: true
+        field:
+          type: string
+      required:
+      - id
+      - actor
+      - participantKind
+      - expiresAt
+      - target
+      additionalProperties: false
+    ErrorEnvelope:
+      type: object
+      properties:
+        type:
+          type: string
+        code:
+          type: string
+        param:
+          type: string
+        message:
+          type: string
+        doc_url:
+          type: string
+        request_id:
+          type: string
+        event_id:
+          type: string
+        errors:
+          readOnly: true
+          type: array
+          items:
+            readOnly: true
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              param:
+                type: string
+            required:
+            - message
+            additionalProperties: false
+      required:
+      - type
+      - message
+      additionalProperties: true
+    CommitReceipt:
+      oneOf:
+      - type: object
+        properties:
+          status:
+            type: string
+            const: queued
+          statusAt:
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          lastSyncId:
+            type: number
+            const: 0
+          correlationId:
+            type: string
+            minLength: 1
+            maxLength: 255
+          object:
+            type: string
+            const: commit_receipt
+          id:
+            type: string
+            minLength: 1
+          clientTxId:
+            type: string
+            minLength: 1
+          serverTxId:
+            type: string
+            minLength: 1
+          createdAt:
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          success:
+            type: boolean
+            const: true
+          ops:
+            type: integer
+            minimum: 0
+            maximum: 9007199254740991
+          authority:
+            type: object
+            properties:
+              organizationId:
+                type: string
+                minLength: 1
+              projectId:
+                default: null
+                anyOf:
+                - type: string
+                  minLength: 1
+                - type: 'null'
+              branchId:
+                default: null
+                anyOf:
+                - type: string
+                  minLength: 1
+                - type: 'null'
+              syncGroups:
+                type: array
+                items:
+                  type: string
+              operations:
+                type: array
+                items:
+                  type: string
+                  pattern: ^[^.\s]+\.(read|create|update|delete)$
+              participantKind:
+                type: string
+                enum:
+                - user
+                - agent
+                - system
+              participantId:
+                type: string
+                minLength: 1
+              deliveryPartition:
+                default: null
+                anyOf:
+                - type: object
+                  properties:
+                    index:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                    count:
+                      type: integer
+                      minimum: 2
+                      maximum: 9007199254740991
+                  required:
+                  - index
+                  - count
+                  additionalProperties: false
+                - type: 'null'
+            required:
+            - organizationId
+            - projectId
+            - branchId
+            - syncGroups
+            - operations
+            - participantKind
+            - participantId
+            - deliveryPartition
+            additionalProperties: false
+          notifications:
+            type: array
+            items:
+              oneOf:
+              - type: object
+                properties:
+                  object:
+                    type: string
+                    const: stale_notification
+                  target:
+                    readOnly: true
+                    type: object
+                    properties:
+                      model:
+                        type: string
+                      id:
+                        type: string
+                      field:
+                        type: string
+                      fields:
+                        readOnly: true
+                        type: array
+                        items:
+                          type: string
+                      meta:
+                        type: object
+                        additionalProperties: true
+                    required:
+                    - model
+                    - id
+                    additionalProperties: false
+                  readAt:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  observedSyncId:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  writtenBy:
+                    type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                        - user
+                        - agent
+                        - system
+                      id:
+                        type: string
+                    required:
+                    - kind
+                    - id
+                    additionalProperties: false
+                  scope:
+                    type: string
+                    const: row
+                  currentValues:
+                    type: object
+                    additionalProperties: true
+                required:
+                - object
+                - target
+                - readAt
+                - observedSyncId
+                - writtenBy
+                - scope
+                - currentValues
+                additionalProperties: false
+              - type: object
+                properties:
+                  object:
+                    type: string
+                    const: stale_notification
+                  target:
+                    readOnly: true
+                    type: object
+                    properties:
+                      model:
+                        type: string
+                      id:
+                        type: string
+                      field:
+                        type: string
+                      fields:
+                        readOnly: true
+                        type: array
+                        items:
+                          type: string
+                      meta:
+                        type: object
+                        additionalProperties: true
+                    required:
+                    - model
+                    - id
+                    additionalProperties: false
+                  readAt:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  observedSyncId:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  writtenBy:
+                    type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                        - user
+                        - agent
+                        - system
+                      id:
+                        type: string
+                    required:
+                    - kind
+                    - id
+                    additionalProperties: false
+                  scope:
+                    type: string
+                    const: group
+                  group:
+                    type: string
+                    pattern: ^[a-z][a-z0-9_]*:[\s\S]{1,}$
+                  propagation:
+                    readOnly: true
+                    type: object
+                    properties:
+                      via:
+                        type: string
+                        enum:
+                        - self
+                        - parent
+                        - transitive
+                      through:
+                        readOnly: true
+                        type: array
+                        items:
+                          type: string
+                    required:
+                    - via
+                    - through
+                    additionalProperties: false
+                  changed:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      sample:
+                        readOnly: true
+                        type: array
+                        items:
+                          readOnly: true
+                          type: object
+                          properties:
+                            model:
+                              type: string
+                            id:
+                              type: string
+                            field:
+                              type: string
+                            fields:
+                              readOnly: true
+                              type: array
+                              items:
+                                type: string
+                            meta:
+                              type: object
+                              additionalProperties: true
+                          required:
+                          - model
+                          - id
+                          additionalProperties: false
+                      truncated:
+                        type: boolean
+                    required:
+                    - count
+                    - sample
+                    - truncated
+                    additionalProperties: false
+                required:
+                - object
+                - target
+                - readAt
+                - observedSyncId
+                - writtenBy
+                - scope
+                - group
+                additionalProperties: false
+          missingIds:
+            type: array
+            items:
+              type: string
+              minLength: 1
+          operationResults:
+            minItems: 1
+            type: array
+            items:
+              type: object
+              properties:
+                transactionId:
+                  type: string
+                  minLength: 1
+                outcome:
+                  type: string
+                  enum:
+                  - created
+                  - updated
+                  - deleted
+                  - archived
+                  - unarchived
+                row:
+                  type: object
+                  additionalProperties: true
+              required:
+              - transactionId
+              - outcome
+              - row
+              additionalProperties: false
+        required:
+        - status
+        - statusAt
+        - lastSyncId
+        - correlationId
+        - object
+        - clientTxId
+        - serverTxId
+        - createdAt
+        - success
+        - ops
+        - authority
+        additionalProperties: false
+      - type: object
+        properties:
+          status:
+            type: string
+            const: confirmed
+          statusAt:
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          lastSyncId:
+            type: integer
+            minimum: 0
+            maximum: 9007199254740991
+          correlationId:
+            type: string
+            minLength: 1
+            maxLength: 255
+          object:
+            type: string
+            const: commit_receipt
+          id:
+            type: string
+            minLength: 1
+          clientTxId:
+            type: string
+            minLength: 1
+          serverTxId:
+            type: string
+            minLength: 1
+          createdAt:
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          success:
+            type: boolean
+            const: true
+          ops:
+            type: integer
+            minimum: 0
+            maximum: 9007199254740991
+          authority:
+            type: object
+            properties:
+              organizationId:
+                type: string
+                minLength: 1
+              projectId:
+                default: null
+                anyOf:
+                - type: string
+                  minLength: 1
+                - type: 'null'
+              branchId:
+                default: null
+                anyOf:
+                - type: string
+                  minLength: 1
+                - type: 'null'
+              syncGroups:
+                type: array
+                items:
+                  type: string
+              operations:
+                type: array
+                items:
+                  type: string
+                  pattern: ^[^.\s]+\.(read|create|update|delete)$
+              participantKind:
+                type: string
+                enum:
+                - user
+                - agent
+                - system
+              participantId:
+                type: string
+                minLength: 1
+              deliveryPartition:
+                default: null
+                anyOf:
+                - type: object
+                  properties:
+                    index:
+                      type: integer
+                      minimum: 0
+                      maximum: 9007199254740991
+                    count:
+                      type: integer
+                      minimum: 2
+                      maximum: 9007199254740991
+                  required:
+                  - index
+                  - count
+                  additionalProperties: false
+                - type: 'null'
+            required:
+            - organizationId
+            - projectId
+            - branchId
+            - syncGroups
+            - operations
+            - participantKind
+            - participantId
+            - deliveryPartition
+            additionalProperties: false
+          notifications:
+            type: array
+            items:
+              oneOf:
+              - type: object
+                properties:
+                  object:
+                    type: string
+                    const: stale_notification
+                  target:
+                    readOnly: true
+                    type: object
+                    properties:
+                      model:
+                        type: string
+                      id:
+                        type: string
+                      field:
+                        type: string
+                      fields:
+                        readOnly: true
+                        type: array
+                        items:
+                          type: string
+                      meta:
+                        type: object
+                        additionalProperties: true
+                    required:
+                    - model
+                    - id
+                    additionalProperties: false
+                  readAt:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  observedSyncId:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  writtenBy:
+                    type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                        - user
+                        - agent
+                        - system
+                      id:
+                        type: string
+                    required:
+                    - kind
+                    - id
+                    additionalProperties: false
+                  scope:
+                    type: string
+                    const: row
+                  currentValues:
+                    type: object
+                    additionalProperties: true
+                required:
+                - object
+                - target
+                - readAt
+                - observedSyncId
+                - writtenBy
+                - scope
+                - currentValues
+                additionalProperties: false
+              - type: object
+                properties:
+                  object:
+                    type: string
+                    const: stale_notification
+                  target:
+                    readOnly: true
+                    type: object
+                    properties:
+                      model:
+                        type: string
+                      id:
+                        type: string
+                      field:
+                        type: string
+                      fields:
+                        readOnly: true
+                        type: array
+                        items:
+                          type: string
+                      meta:
+                        type: object
+                        additionalProperties: true
+                    required:
+                    - model
+                    - id
+                    additionalProperties: false
+                  readAt:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  observedSyncId:
+                    type: integer
+                    minimum: 0
+                    maximum: 9007199254740991
+                  writtenBy:
+                    type: object
+                    properties:
+                      kind:
+                        type: string
+                        enum:
+                        - user
+                        - agent
+                        - system
+                      id:
+                        type: string
+                    required:
+                    - kind
+                    - id
+                    additionalProperties: false
+                  scope:
+                    type: string
+                    const: group
+                  group:
+                    type: string
+                    pattern: ^[a-z][a-z0-9_]*:[\s\S]{1,}$
+                  propagation:
+                    readOnly: true
+                    type: object
+                    properties:
+                      via:
+                        type: string
+                        enum:
+                        - self
+                        - parent
+                        - transitive
+                      through:
+                        readOnly: true
+                        type: array
+                        items:
+                          type: string
+                    required:
+                    - via
+                    - through
+                    additionalProperties: false
+                  changed:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      sample:
+                        readOnly: true
+                        type: array
+                        items:
+                          readOnly: true
+                          type: object
+                          properties:
+                            model:
+                              type: string
+                            id:
+                              type: string
+                            field:
+                              type: string
+                            fields:
+                              readOnly: true
+                              type: array
+                              items:
+                                type: string
+                            meta:
+                              type: object
+                              additionalProperties: true
+                          required:
+                          - model
+                          - id
+                          additionalProperties: false
+                      truncated:
+                        type: boolean
+                    required:
+                    - count
+                    - sample
+                    - truncated
+                    additionalProperties: false
+                required:
+                - object
+                - target
+                - readAt
+                - observedSyncId
+                - writtenBy
+                - scope
+                - group
+                additionalProperties: false
+          missingIds:
+            type: array
+            items:
+              type: string
+              minLength: 1
+          operationResults:
+            minItems: 1
+            type: array
+            items:
+              type: object
+              properties:
+                transactionId:
+                  type: string
+                  minLength: 1
+                outcome:
+                  type: string
+                  enum:
+                  - created
+                  - updated
+                  - deleted
+                  - archived
+                  - unarchived
+                row:
+                  type: object
+                  additionalProperties: true
+              required:
+              - transactionId
+              - outcome
+              - row
+              additionalProperties: false
+        required:
+        - status
+        - statusAt
+        - lastSyncId
+        - object
+        - clientTxId
+        - serverTxId
+        - createdAt
+        - success
+        - ops
+        - authority
+        additionalProperties: false
+      discriminator:
+        propertyName: status
+    ModelPage:
+      type: object
+      properties:
+        object:
+          type: string
+          const: list
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        has_more:
+          type: boolean
+        next_cursor:
+          oneOf:
+          - $ref: '#/components/schemas/Cursor'
+          - type: 'null'
+        model:
+          type: string
+        stamp:
+          type: number
+        evidence:
+          readOnly: true
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+              stamp:
+                type: integer
+                minimum: 0
+                maximum: 9007199254740991
+            required:
+            - id
+            - stamp
+            additionalProperties: false
+      required:
+      - object
+      - data
+      - has_more
+      - next_cursor
+      - model
+      - stamp
+      additionalProperties: false
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Your Ablo API key (sk_… / rk_…).

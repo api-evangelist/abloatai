@@ -1,0 +1,98 @@
+generated: '2026-08-19'
+method: derived
+source: openapi/abloatai-api-openapi.yml + https://docs.abloatai.com/schema-contract
+note: >-
+  Ablo's data model is unusual and worth stating plainly before the entity list: the DOMAIN entities
+  are not Ablo's. The customer declares them in ablo/schema.ts (defineSchema) and pushes them, and
+  they are addressed generically through a single {model} path parameter — so listModelRows,
+  createModelRow, getModelRow, updateModelRow and deleteModelRow are one CRUD surface over an
+  unbounded, customer-defined entity set whose rows live in the customer's own Postgres. The
+  entities below are Ablo's own COORDINATION entities: the objects Ablo actually owns and returns.
+  A conventional ERD of "the API's objects" would therefore be misleading, and none is published.
+customer_defined_entities:
+  mechanism: '{model} path parameter'
+  declared_in: 'ablo/schema.ts via defineSchema({ ... })'
+  pushed_by: 'ablo push / ablo dev'
+  discovered_at_runtime: 'GET /v1/schema (getSchema) — "the models this key can address"'
+  storage: "the customer's own Postgres; Ablo holds only the ordered log and coordination state"
+  note: 'A write to an unpushed or changed model fails with server_execute_unknown_model.'
+  id_field: id
+  id_note: 'As of 0.52.0, models carry only id.'
+entities:
+  - name: ModelRow
+    schema: ModelRead
+    description: One row of a customer-declared model, as Ablo returns it.
+    fields: [object, model, id, data, stamp, claims]
+    key: id
+    version_field: stamp
+    version_note: 'stamp is the monotonic watermark the row was read at; it is what readAt compares against for stale-guard writes.'
+    operations: [listModelRows, createModelRow, getModelRow, updateModelRow, deleteModelRow]
+  - name: ModelPage
+    schema: ModelPage
+    description: A cursor page of model rows.
+    fields: [object, data, has_more, next_cursor, model, stamp, evidence]
+    operations: [listModelRows]
+  - name: Claim
+    schema: Claim
+    description: A durable lease on one row, with a wait-line position when queued.
+    fields: [id, actor, participantKind, onBehalfOfId, onBehalfOfKind, capabilityId, description, status, position, expiresAt, fenceToken, target, meta, field]
+    key: id
+    operations: [listClaims, acquireClaim, getClaim, releaseClaim, heartbeatClaim, heartbeatClaims, acquireModelClaim, releaseModelClaim, heartbeatModelClaim, reorderModelClaimQueue]
+    states: [acquired, queued]
+    fencing: 'fenceToken guards against a resumed holder writing after its lease moved on.'
+  - name: Branch
+    description: An immutable transaction branch — an isolated plane with its own schema and credential. Production is the root.
+    key: id
+    human_key: slug
+    operations: [listBranches, createBranch, getBranch, deleteBranch, getBranchStatus, mintBranchCredential]
+  - name: Capability
+    description: A minted grant for an agent or system.
+    key: id
+    operations: [mintCapability, getCapability, revokeCapability, rotateCapability]
+  - name: EphemeralKey
+    description: A short-lived session credential (ek_) minted server-side for a browser or agent.
+    operations: [mintEphemeralKey]
+  - name: Commit
+    schema: CommitReceipt
+    description: An atomic batch of operations, and/or a registration of durable premises. The marquee write path.
+    key: id
+    operations: [commit, listCommits, getCommit]
+  - name: LogEntry
+    schema: LogPage
+    description: An entry in the ordered transaction log — what changed and who changed it.
+    operations: [listLogEntries]
+  - name: LogDelivery
+    description: How much of what was recorded could actually reach anyone.
+    operations: [getLogDelivery]
+    added_in: 0.55.0
+  - name: Schema
+    schema: SchemaRead
+    description: What the models look like, for the plane this credential is bound to.
+    operations: [getSchema]
+  - name: WebhookEndpoint
+    description: A registered destination for the signed transaction-log stream.
+    key: id
+    id_prefix: we_
+    secret_prefix: whsec_
+    in_openapi: false
+    note: 'Documented at https://docs.abloatai.com/webhooks with a working curl example against /api/v1/webhook_endpoints, but ABSENT from the published OpenAPI.'
+relationships:
+  - {from: Claim, to: ModelRow, kind: belongs_to, via: target, note: 'A claim targets one row of one model.'}
+  - {from: ModelRow, to: Claim, kind: has_many, via: claims, note: 'ModelRead.claims carries the active claims on the row.'}
+  - {from: Claim, to: Capability, kind: belongs_to, via: capabilityId}
+  - {from: Claim, to: Claim, kind: has_one, via: heldByClaim, note: 'A queued claim names the claim currently holding the row.'}
+  - {from: Branch, to: Branch, kind: belongs_to, via: parent, note: 'Child branches hang off the protected production root.'}
+  - {from: Branch, to: Capability, kind: has_many, via: mintBranchCredential, note: 'A branch mints its own expiring branch-bound credentials.'}
+  - {from: Branch, to: Schema, kind: has_one, note: 'Each branch plane carries its own pushed schema.'}
+  - {from: Commit, to: ModelRow, kind: has_many, note: 'A commit applies a batch of row operations atomically.'}
+  - {from: Commit, to: LogEntry, kind: has_many, via: syncId, note: 'Each committed change becomes an ordered log entry.'}
+  - {from: LogEntry, to: WebhookEndpoint, kind: has_many, via: cursor, note: 'Each endpoint holds its own cursor over the shared log.'}
+  - {from: EphemeralKey, to: Capability, kind: belongs_to, via: can, note: 'A session is bounded by the typed can grant it was minted with.'}
+id_prefixes:
+  - {prefix: 'req_', entity: request id, source: 'X-Request-Id header and error envelope request_id'}
+  - {prefix: 'we_', entity: WebhookEndpoint}
+  - {prefix: 'whsec_', entity: webhook signing secret}
+  - {prefix: 'prj_', entity: Project, source: 'https://docs.abloatai.com/cli'}
+  - {prefix: 'sk_ / rk_ / pk_ / ek_ / mk_', entity: credential classes, source: authentication/ablo-authentication.yml}
+render: null
+render_note: 'No subway/ visual in this repo.'

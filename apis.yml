@@ -1,57 +1,334 @@
+aid: abloatai
 name: Ablo
-description: >-
-  Coordination/collaboration infrastructure for AI agents — one API that lets agents, apps, and services claim, change,
-  and confirm the same database rows using durable claims (leases with wait-lines) plus guarded, idempotent writes that
-  return receipts and reject stale writes.
-url: https://ablo.apievangelist.com/apis.yml
+description: 'Ablo is collaboration infrastructure for AI agents: one API that lets agents, apps and people
+  claim, change and confirm the same database rows without clobbering each other. Rows stay in the customer''s
+  own Postgres — Ablo holds only an ordered transaction log and the coordination state — while durable
+  claims (leases with a wait-line, which make a second writer wait and then hand it the fresh row rather
+  than lock), guarded idempotent writes with stale premises, atomic batch commits and signed webhook delivery
+  turn concurrent multi-agent editing into something that serializes instead of racing. The surface is
+  a 32-operation OpenAPI 3.1 REST API, a WSS realtime stream, a TypeScript SDK and CLI released in lockstep
+  with the API, and two MCP servers.'
+url: https://abloatai.apievangelist.com/apis.yml
+image: https://www.abloatai.com/logo-black.svg
 created: '2026-08-19'
 modified: '2026-08-19'
 specificationVersion: '0.21'
 tags:
-  - agent-infrastructure
-  - multi-agent-coordination
-  - concurrency-control
-  - state-management
-  - database
-  - postgres
-  - real-time-sync
-  - mcp
-  - developer-tools
-  - backend-infrastructure
+- agent-infrastructure
+- multi-agent-coordination
+- concurrency-control
+- state-management
+- database
+- postgres
+- real-time-sync
+- mcp
+- developer-tools
+- backend-infrastructure
 apis:
-  - name: Ablo API
-    description: >-
-      REST API for multi-agent coordination over shared state: models (row CRUD), durable claims with wait-lines,
-      credentials, branches, schema, logs, and commits. Bearer-token auth, version 0.55.0.
-    humanURL: https://docs.abloatai.com/api-reference
-    baseURL: https://api.abloatai.com/api
-    tags:
-      - agent-infrastructure
-      - multi-agent-coordination
-      - concurrency-control
-      - state-management
-      - database
-      - postgres
-      - real-time-sync
-      - mcp
-      - developer-tools
-      - backend-infrastructure
-    properties:
-      - type: OpenAPI
-        url: https://docs.abloatai.com/openapi.json
-      - type: LLMsTxt
-        url: https://docs.abloatai.com/llms.txt
-      - type: Documentation
-        url: https://docs.abloatai.com
-      - type: Documentation
-        url: https://docs.abloatai.com/api-reference
-      - type: Documentation
-        url: https://docs.abloatai.com/api
+- name: Ablo Integration-Helper MCP Server
+  description: 'A public, anonymous, stateless Streamable-HTTP MCP server Ablo runs on its own domain
+    so an AI coding assistant writing an Ablo integration can search the real docs, inspect the actual
+    SDK export surface, lint a defineSchema source and scaffold a starter — instead of guessing at the
+    API. Five tools, 44 doc resources addressable at ablo://docs/{name}, and three parameterised prompts.
+    It serves documentation only: there is no data plane and nothing org-scoped, which is why it needs
+    no auth. The separate coordination MCP server is the data plane.'
+  humanURL: https://docs.abloatai.com/mcp
+  baseURL: https://www.abloatai.com/api/mcp
+  tags:
+  - mcp
+  - agent-infrastructure
+  - developer-tools
+  properties:
+  - type: MCPServer
+    url: mcp/abloatai-mcp.yml
+  - type: MCPServer
+    url: https://www.abloatai.com/api/mcp
+  - type: ToolCrosswalk
+    url: mcp/abloatai-tool-crosswalk.yml
+  - type: Documentation
+    url: https://docs.abloatai.com/mcp
+- aid: ablo:ablo-branches-api
+  name: Ablo Branches API
+  description: The branches API from Ablo — 4 operation(s) for branches.
+  humanURL: https://docs.abloatai.com/api-reference
+  baseURL: https://api.abloatai.com/api
+  tags:
+  - branches
+  properties:
+  - type: OpenAPI
+    url: openapi/abloatai-branches-api-openapi.yml
+  - type: Documentation
+    url: https://docs.abloatai.com
+  - type: APIReference
+    url: https://docs.abloatai.com/api-reference
+  - type: Authentication
+    url: authentication/abloatai-authentication.yml
+  - type: Conventions
+    url: conventions/abloatai-conventions.yml
+  - type: ErrorCatalog
+    url: errors/abloatai-error-codes.yml
+  - type: DataModel
+    url: data-model/abloatai-data-model.yml
+  - type: RateLimits
+    url: rate-limits/abloatai-rate-limits.yml
+  - type: Webhooks
+    url: asyncapi/abloatai-webhooks.yml
+  - type: LLMsTxt
+    url: https://docs.abloatai.com/llms.txt
+- aid: ablo:ablo-claims-api
+  name: Ablo Claims API
+  description: The claims API from Ablo — 7 operation(s) for claims.
+  humanURL: https://docs.abloatai.com/api-reference
+  baseURL: https://api.abloatai.com/api
+  tags:
+  - claims
+  properties:
+  - type: OpenAPI
+    url: openapi/abloatai-claims-api-openapi.yml
+  - type: Documentation
+    url: https://docs.abloatai.com
+  - type: APIReference
+    url: https://docs.abloatai.com/api-reference
+  - type: Authentication
+    url: authentication/abloatai-authentication.yml
+  - type: Conventions
+    url: conventions/abloatai-conventions.yml
+  - type: ErrorCatalog
+    url: errors/abloatai-error-codes.yml
+  - type: DataModel
+    url: data-model/abloatai-data-model.yml
+  - type: RateLimits
+    url: rate-limits/abloatai-rate-limits.yml
+  - type: Webhooks
+    url: asyncapi/abloatai-webhooks.yml
+  - type: LLMsTxt
+    url: https://docs.abloatai.com/llms.txt
+- aid: ablo:ablo-commits-api
+  name: Ablo Commits API
+  description: The commits API from Ablo — 2 operation(s) for commits.
+  humanURL: https://docs.abloatai.com/api-reference
+  baseURL: https://api.abloatai.com/api
+  tags:
+  - commits
+  properties:
+  - type: OpenAPI
+    url: openapi/abloatai-commits-api-openapi.yml
+  - type: Documentation
+    url: https://docs.abloatai.com
+  - type: APIReference
+    url: https://docs.abloatai.com/api-reference
+  - type: Authentication
+    url: authentication/abloatai-authentication.yml
+  - type: Conventions
+    url: conventions/abloatai-conventions.yml
+  - type: ErrorCatalog
+    url: errors/abloatai-error-codes.yml
+  - type: DataModel
+    url: data-model/abloatai-data-model.yml
+  - type: RateLimits
+    url: rate-limits/abloatai-rate-limits.yml
+  - type: Webhooks
+    url: asyncapi/abloatai-webhooks.yml
+  - type: LLMsTxt
+    url: https://docs.abloatai.com/llms.txt
+- aid: ablo:ablo-credentials-api
+  name: Ablo Credentials API
+  description: The credentials API from Ablo — 5 operation(s) for credentials.
+  humanURL: https://docs.abloatai.com/api-reference
+  baseURL: https://api.abloatai.com/api
+  tags:
+  - credentials
+  properties:
+  - type: OpenAPI
+    url: openapi/abloatai-credentials-api-openapi.yml
+  - type: Documentation
+    url: https://docs.abloatai.com
+  - type: APIReference
+    url: https://docs.abloatai.com/api-reference
+  - type: Authentication
+    url: authentication/abloatai-authentication.yml
+  - type: Conventions
+    url: conventions/abloatai-conventions.yml
+  - type: ErrorCatalog
+    url: errors/abloatai-error-codes.yml
+  - type: DataModel
+    url: data-model/abloatai-data-model.yml
+  - type: RateLimits
+    url: rate-limits/abloatai-rate-limits.yml
+  - type: Webhooks
+    url: asyncapi/abloatai-webhooks.yml
+  - type: LLMsTxt
+    url: https://docs.abloatai.com/llms.txt
+- aid: ablo:ablo-logs-api
+  name: Ablo Logs API
+  description: The logs API from Ablo — 2 operation(s) for logs.
+  humanURL: https://docs.abloatai.com/api-reference
+  baseURL: https://api.abloatai.com/api
+  tags:
+  - logs
+  properties:
+  - type: OpenAPI
+    url: openapi/abloatai-logs-api-openapi.yml
+  - type: Documentation
+    url: https://docs.abloatai.com
+  - type: APIReference
+    url: https://docs.abloatai.com/api-reference
+  - type: Authentication
+    url: authentication/abloatai-authentication.yml
+  - type: Conventions
+    url: conventions/abloatai-conventions.yml
+  - type: ErrorCatalog
+    url: errors/abloatai-error-codes.yml
+  - type: DataModel
+    url: data-model/abloatai-data-model.yml
+  - type: RateLimits
+    url: rate-limits/abloatai-rate-limits.yml
+  - type: Webhooks
+    url: asyncapi/abloatai-webhooks.yml
+  - type: LLMsTxt
+    url: https://docs.abloatai.com/llms.txt
+- aid: ablo:ablo-models-api
+  name: Ablo Models API
+  description: The models API from Ablo — 2 operation(s) for models.
+  humanURL: https://docs.abloatai.com/api-reference
+  baseURL: https://api.abloatai.com/api
+  tags:
+  - models
+  properties:
+  - type: OpenAPI
+    url: openapi/abloatai-models-api-openapi.yml
+  - type: Documentation
+    url: https://docs.abloatai.com
+  - type: APIReference
+    url: https://docs.abloatai.com/api-reference
+  - type: Authentication
+    url: authentication/abloatai-authentication.yml
+  - type: Conventions
+    url: conventions/abloatai-conventions.yml
+  - type: ErrorCatalog
+    url: errors/abloatai-error-codes.yml
+  - type: DataModel
+    url: data-model/abloatai-data-model.yml
+  - type: RateLimits
+    url: rate-limits/abloatai-rate-limits.yml
+  - type: Webhooks
+    url: asyncapi/abloatai-webhooks.yml
+  - type: LLMsTxt
+    url: https://docs.abloatai.com/llms.txt
+- aid: ablo:ablo-schema-api
+  name: Ablo Schema API
+  description: The schema API from Ablo — 1 operation(s) for schema.
+  humanURL: https://docs.abloatai.com/api-reference
+  baseURL: https://api.abloatai.com/api
+  tags:
+  - schema
+  properties:
+  - type: OpenAPI
+    url: openapi/abloatai-schema-api-openapi.yml
+  - type: Documentation
+    url: https://docs.abloatai.com
+  - type: APIReference
+    url: https://docs.abloatai.com/api-reference
+  - type: Authentication
+    url: authentication/abloatai-authentication.yml
+  - type: Conventions
+    url: conventions/abloatai-conventions.yml
+  - type: ErrorCatalog
+    url: errors/abloatai-error-codes.yml
+  - type: DataModel
+    url: data-model/abloatai-data-model.yml
+  - type: RateLimits
+    url: rate-limits/abloatai-rate-limits.yml
+  - type: Webhooks
+    url: asyncapi/abloatai-webhooks.yml
+  - type: LLMsTxt
+    url: https://docs.abloatai.com/llms.txt
 maintainers:
-  - FN: Ablo
-    url: https://www.abloatai.com
+- FN: Ablo
+  email: support@abloatai.com
+  url: https://www.abloatai.com
 generated:
   by: apis.io/add
   model: claude-opus-4-8
   confidence: 90
   at: '2026-08-19T10:57:24.801Z'
+common:
+- type: DeveloperPortal
+  url: https://docs.abloatai.com
+- type: Documentation
+  url: https://docs.abloatai.com
+- type: APIReference
+  url: https://docs.abloatai.com/api-reference
+- type: GettingStarted
+  url: https://docs.abloatai.com/quickstart
+- type: Support
+  url: https://github.com/Abloatai/abloatai/issues
+- type: Blog
+  url: https://www.abloatai.com/blog
+- type: GitHubOrganization
+  url: https://github.com/Abloatai
+- type: SourceCode
+  url: https://github.com/Abloatai/ablo
+- type: Pricing
+  url: https://docs.abloatai.com/pricing
+- type: SignUp
+  url: https://dashboard.abloatai.com
+- type: Login
+  url: https://dashboard.abloatai.com
+- type: TermsOfService
+  url: https://www.abloatai.com/terms-conditions
+- type: PrivacyPolicy
+  url: https://www.abloatai.com/privacy-policy
+- type: ChangeLog
+  url: https://github.com/Abloatai/abloatai/blob/main/CHANGELOG.md
+- type: ChangeLog
+  url: changelog/abloatai-changelog.yml
+- type: Deprecation
+  url: https://docs.abloatai.com/migration
+- type: Lifecycle
+  url: lifecycle/abloatai-lifecycle.yml
+- type: Authentication
+  url: authentication/abloatai-authentication.yml
+- type: Conventions
+  url: conventions/abloatai-conventions.yml
+- type: Idempotency
+  url: conventions/abloatai-conventions.yml
+- type: ErrorCatalog
+  url: errors/abloatai-error-codes.yml
+- type: DataModel
+  url: data-model/abloatai-data-model.yml
+- type: RateLimits
+  url: rate-limits/abloatai-rate-limits.yml
+- type: Plans
+  url: plans/abloatai-plans-pricing.yml
+- type: Packages
+  url: packages/abloatai-packages.yml
+- type: SDKs
+  url: packages/abloatai-packages.yml
+- type: CLI
+  url: cli/abloatai-cli.yml
+- type: Sandbox
+  url: sandbox/abloatai-sandbox.yml
+- type: Webhooks
+  url: asyncapi/abloatai-webhooks.yml
+- type: MCPServer
+  url: mcp/abloatai-mcp.yml
+- type: ToolCrosswalk
+  url: mcp/abloatai-tool-crosswalk.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: LLMsTxt
+  url: llms/abloatai-llms.txt
+- type: Overlay
+  url: overlays/abloatai-api-overlay.yaml
+- type: Conformance
+  url: conformance/abloatai-conformance.yml
+- type: AgenticAccess
+  url: agentic-access/abloatai-agentic-access.yml
+- type: DomainSecurity
+  url: security/abloatai-domain-security.yml
+x-enrichment:
+  date: '2026-08-19'
+  status: enriched
+  artifacts_added: 28
+  pass: local-v1

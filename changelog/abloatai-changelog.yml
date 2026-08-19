@@ -1,0 +1,125 @@
+generated: '2026-08-19'
+method: searched
+source: https://github.com/Abloatai/abloatai/blob/main/CHANGELOG.md
+also_published_at: https://docs.abloatai.com/changelog/<minor>.0 (one page per release, listed in llms.txt)
+dates_source: https://api.github.com/repos/Abloatai/abloatai/releases (GitHub release published_at)
+note: 'The changelog is a first-class artifact here: a 1,108-line CHANGELOG.md in the public monorepo, a per-release
+  docs page, and a GitHub release with a date for every version. The API, the CLI and all four npm packages share
+  one version number, so a single changelog entry describes the whole surface. Release cadence is very high — 15
+  releases between 2026-07-28 and 2026-08-19, four of them on 2026-07-29 alone.'
+scheme: semver (pre-1.0)
+current_version: 0.55.0
+current_version_date: '2026-08-19'
+pre_1_0: true
+pre_1_0_note: 'Below 1.0 the minor is the breaking-change axis: the docs publish a dedicated Upgrade Guide (https://docs.abloatai.com/migration)
+  and AGENTS.md warns that a website describes the newest release, so against a pinned version it will hand you
+  a call your package does not have (retrieve/list replaced get/getAll/getCount in 0.35.0).'
+contract_version:
+  value: '2026-08-15'
+  header: Ablo-Version
+  note: The error/wire contract carries its OWN date-stamped version, separate from the product semver, and is echoed
+    on every response.
+cadence:
+  releases_observed: 15
+  window: 2026-07-28 to 2026-08-19
+  note: roughly a release every 1.5 days
+entries:
+- version: 0.55.0
+  date: '2026-08-19'
+  docs: https://docs.abloatai.com/changelog/55.0
+  highlights:
+  - '`ablo doctor` says whether the writes reached anyone'
+  - '`ablo check` counts rows the sync layer cannot see'
+  - '`GET /v1/logs/delivery`'
+  - Removed
+- version: 0.54.0
+  date: '2026-08-18'
+  docs: https://docs.abloatai.com/changelog/54.0
+  highlights:
+  - A scoped session is scoped everywhere it is read
+  - A change reaches the clients watching it, whatever the column is called
+  - Reordering a claim queue takes effect
+  - A commit costs a fixed number of round trips
+  - Engine-reserved groups have a constructor
+  - The cross-organization scope is `organization:act-as`
+  - An outbox event carries declared field names
+  - 'CLI: report what got in your way'
+- version: 0.53.0
+  date: '2026-08-18'
+  docs: https://docs.abloatai.com/changelog/53.0
+  highlights:
+  - A collection read says where the collection ends
+  - The page cursor is called `cursor`
+  - A filter reaches the server intact
+  - A number field reads back as a number
+  - A reconnect cannot roll back a confirmed write
+  - The base URL is checked where the credential travels
+  - Two error codes added
+  - CLI
+- version: 0.52.0
+  date: '2026-08-15'
+  docs: https://docs.abloatai.com/changelog/52.0
+  highlights:
+  - Models carry only `id`
+  - Updates can carry a precondition
+  - Commit receipts return the rows the database wrote
+  - Two error codes renamed
+  - CLI
+- version: 0.51.0
+  date: '2026-08-11'
+  docs: https://docs.abloatai.com/changelog/51.0
+  highlights:
+  - One platform schema can serve every customer organization
+- version: 0.50.0
+  date: '2026-08-11'
+  docs: https://docs.abloatai.com/changelog/50.0
+  highlights:
+  - Context can travel from reads to a model and back to a write
+- version: 0.49.0
+  date: '2026-08-05'
+  docs: https://docs.abloatai.com/changelog/49.0
+  highlights:
+  - An agent can tell Ablo what it read before it writes
+  - A claim holds while an agent thinks
+  - An agent can read back what it committed
+  - An agent can check what its key allows before it acts
+  - A refused action says which permission was missing
+  - Models named in camelCase resolve when writing to your own database
+  - '`ablo connect apply` says when a database is already connected'
+- version: 0.48.0
+  date: '2026-08-03'
+  docs: https://docs.abloatai.com/changelog/48.0
+  highlights:
+  - A branch is unbound until you connect a database to it
+  - Failures say which branch they happened on
+  - Replication uses your branch's own publication and slot
+  - '`ablo dev --local` connects a branch to the database on your machine'
+  - Renamed
+- version: 0.47.0
+  date: '2026-08-03'
+  docs: https://docs.abloatai.com/changelog/47.0
+  highlights:
+  - Local Postgres works with Ablo Cloud
+  - Awaiting a model write now means it is confirmed
+  - Customer branches connect before accepting a schema
+  - The CLI names the problem it actually hit
+  - Deprecations
+- version: 0.46.0
+  date: '2026-07-31'
+  docs: https://docs.abloatai.com/changelog/46.0
+  highlights:
+  - Provider branches isolate environments; schemas isolate projects
+  - Pre-existing rows arrive on their own
+- version: 0.45.0
+  date: '2026-07-29'
+  docs: https://docs.abloatai.com/changelog/45.0
+  highlights:
+  - Claim admission is authoritative
+  - Contention has a lifecycle you can watch
+- version: 0.44.0
+  date: '2026-07-29'
+  docs: https://docs.abloatai.com/changelog/44.0
+  highlights:
+  - A scope denial names the wall it hit
+  - Write failures carry their request id
+  - '`doctor` reports readiness, not destiny'

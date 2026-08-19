@@ -1,0 +1,72 @@
+generated: '2026-08-19'
+method: derived
+source: mcp/ablo-mcp.yml + openapi/abloatai-api-openapi.yml + https://docs.abloatai.com/mcp
+note: >-
+  Two MCP servers with disjoint jobs. The COORDINATION server is the one that maps onto REST: its
+  row tools are, by Ablo's own documentation, the model-scoped API (/api/v1/models/...) rendered as
+  tools, so each binds to a real operationId with high confidence. Its live tools/list could not be
+  introspected because the @abloatai/mcp package is not published to npm (HTTP 404), so those rows
+  are mapped by the documented tool table rather than by an observed inputSchema. The
+  INTEGRATION-HELPER server WAS introspected live (5 tools with real inputSchemas) and binds to
+  nothing in REST — it is a documentation/scaffolding surface with no data plane, which is the
+  single largest surface divergence in this provider.
+surfaces:
+  openapi:
+    file: openapi/abloatai-api-openapi.yml
+    source: https://docs.abloatai.com/openapi.json
+    operations: 32
+    gated: false
+  mcp_integration_helper:
+    url: https://www.abloatai.com/api/mcp
+    gated: false
+    introspected: true
+    tools: 5
+  mcp_coordination:
+    install: npx -y @abloatai/mcp
+    gated: true
+    introspected: false
+    gate_reason: 'npm package @abloatai/mcp returns HTTP 404; tool list taken from https://docs.abloatai.com/mcp'
+    tools: 12
+  graphql: null
+crosswalk:
+  - {tool: get_schema, server: coordination, category: schema, rest: [getSchema], binding: rest, confidence: high}
+  - {tool: tail_logs, server: coordination, category: logs, rest: [listLogEntries], binding: rest, confidence: high}
+  - {tool: get_model, server: coordination, category: models, rest: [getModelRow], binding: rest, confidence: high}
+  - {tool: list_records, server: coordination, category: models, rest: [listModelRows], binding: rest, confidence: high}
+  - {tool: create_model, server: coordination, category: models, rest: [createModelRow], binding: rest, confidence: high}
+  - {tool: update_model, server: coordination, category: models, rest: [updateModelRow], binding: rest, confidence: high}
+  - {tool: delete_model, server: coordination, category: models, rest: [deleteModelRow], binding: rest, confidence: high}
+  - {tool: claim_model, server: coordination, category: claims, rest: [acquireModelClaim], binding: rest, confidence: high,
+     note: 'Docs describe acquire-or-queue, which is exactly the 201/202 split on acquireModelClaim.'}
+  - {tool: release_claim, server: coordination, category: claims, rest: [releaseModelClaim, releaseClaim], binding: rest, confidence: medium,
+     note: 'Fans out: the model-scoped release and the claim-id release are both plausible backings; the docs table does not say which.'}
+mcp_only:
+  - {tool: list_projects, server: coordination, reason: 'Project management has no operation in the published OpenAPI; the spec covers branches, not projects.'}
+  - {tool: create_project, server: coordination, reason: 'Same — project CRUD is a control-plane surface absent from the public spec.'}
+  - {tool: get_usage, server: coordination, reason: 'Usage/metering has no public REST operation; usage is otherwise only visible via the X-Usage-* response headers.'}
+  - {tool: search_ablo_docs, server: integration-helper, reason: 'Documentation search — no data plane, no REST equivalent.'}
+  - {tool: get_recipe, server: integration-helper, reason: 'Returns doc markdown by name — no REST equivalent.'}
+  - {tool: get_api_surface, server: integration-helper, reason: 'Returns the SDK export list for a package subpath — an SDK-introspection surface, not an API operation.'}
+  - {tool: validate_schema, server: integration-helper, reason: 'Lints defineSchema source locally; runs no code and touches no org state.'}
+  - {tool: scaffold_app, server: integration-helper, reason: 'Emits a starter file tree — a codegen surface with no REST equivalent.'}
+rest_only:
+  - capability: claims (advanced)
+    operations: [listClaims, acquireClaim, getClaim, heartbeatClaim, heartbeatClaims, heartbeatModelClaim, reorderModelClaimQueue]
+    note: 'No coordination tool heartbeats a lease or reorders the wait-line, so a long-running agent driving Ablo purely through MCP cannot extend a claim past its TTL.'
+  - capability: commits
+    operations: [commit, listCommits, getCommit]
+    note: 'The atomic batch-commit operation — the API''s marquee write path — has no MCP tool.'
+  - capability: branches
+    operations: [listBranches, createBranch, getBranch, deleteBranch, mintBranchCredential, getBranchStatus]
+  - capability: credentials
+    operations: [mintEphemeralKey, mintCapability, getCapability, revokeCapability, rotateCapability]
+    note: 'Deliberate: the docs state there are no key-management tools, because a mint returns plaintext once and returning it to an agent would write a live secret into the transcript.'
+  - capability: logs (delivery)
+    operations: [getLogDelivery]
+coverage:
+  tools_named: 17
+  tools_bound: 9
+  mcp_only: 8
+  rest_operations_total: 32
+  rest_operations_with_tool: 9
+  rest_only_operations: 23

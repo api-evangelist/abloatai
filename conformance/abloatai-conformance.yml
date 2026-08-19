@@ -1,0 +1,96 @@
+generated: '2026-08-19'
+method: derived
+source: openapi/abloatai-api-openapi.yml + https://docs.abloatai.com/webhooks + https://docs.abloatai.com/errors + live probes
+note: >-
+  Standards posture derived from the published contract and docs, plus live probes. Ablo conforms to
+  the specification standards it actually uses (OpenAPI 3.1, JSON Schema 2020-12, Standard Webhooks,
+  MCP) and publishes NO regulatory certification of any kind — no SOC 2, no ISO 27001, no trust
+  center, no compliance page. That is an honest absence for a company at this stage, not a finding
+  of non-compliance, but it is the gap most likely to stop an enterprise buyer.
+standards:
+  - id: openapi-3.1
+    conforms: true
+    evidence: 'openapi: 3.1.0 served at https://docs.abloatai.com/openapi.json; 22 paths, 32 operations, all with operationIds, summaries and tags.'
+  - id: json-schema-2020-12
+    conforms: true
+    evidence: 'OpenAPI 3.1 schema objects; the MCP tool inputSchemas declare $schema http://json-schema.org/draft-07/schema# (draft-07 on the MCP side).'
+  - id: standard-webhooks
+    conforms: true
+    evidence: 'Webhook signatures follow the Standard Webhooks scheme (webhook-id / webhook-timestamp / webhook-signature, 5-minute replay window); verified with svix or standardwebhooks.'
+    spec: https://www.standardwebhooks.com
+  - id: mcp
+    conforms: true
+    evidence: 'Live Streamable-HTTP MCP server at https://www.abloatai.com/api/mcp answering tools/list, resources/list and prompts/list (5 tools, 44 resources, 3 prompts).'
+  - id: rfc9457-problem-details
+    conforms: false
+    evidence: 'Errors use a custom AbloError JSON envelope (type/code/message/doc_url/request_id) with content-type application/json, not application/problem+json.'
+    note: 'The envelope is arguably richer than RFC 9457 — every error carries a doc_url deep-link into a 288-code published registry — but it is not the standard shape.'
+  - id: idempotency-key-header
+    conforms: true
+    evidence: 'Idempotency-Key request header (maxLength 255) declared on createBranch and commit; idempotencyKey body field on the three model write operations.'
+    note: 'Follows the draft IETF Idempotency-Key header convention in spirit; scoped per organization AND participant.'
+  - id: cursor-pagination
+    conforms: true
+    evidence: 'Opaque cursor with next_cursor/has_more and a Stripe-shaped object:"list" envelope.'
+  - id: rfc8594-sunset
+    conforms: false
+    evidence: 'No Sunset or Deprecation response headers observed on live requests; deprecation is signalled in the spec (deprecated: true on starting_after) and the Upgrade Guide only.'
+  - id: oauth2
+    conforms: false
+    evidence: 'No oauth2 securityScheme in the spec; /.well-known/oauth-authorization-server returns 404 on api.abloatai.com. Auth is bearer API key with prefix-typed capability classes.'
+  - id: oidc
+    conforms: false
+    evidence: '/.well-known/openid-configuration returns 404 on api.abloatai.com.'
+    note: 'A third-party JWT issuer CAN be registered (the error registry documents jwt_issuer_untrusted, jwt_audience_mismatch, jwt_missing_organization), so Ablo consumes OIDC-shaped tokens without being an OIDC provider.'
+  - id: rfc9116-security-txt
+    conforms: false
+    evidence: '/.well-known/security.txt returns 404 on api.abloatai.com and docs.abloatai.com; the www/apex hosts return SPA soft-200 HTML, not a document.'
+  - id: rfc8615-well-known
+    conforms: false
+    evidence: 'No /.well-known/ document served on any host.'
+  - id: a2a
+    conforms: false
+    evidence: 'No agent card at /.well-known/agent-card.json or /.well-known/agent.json on any host.'
+  - id: asyncapi
+    conforms: false
+    evidence: 'No AsyncAPI document published despite two event surfaces (signed webhooks and a WSS realtime stream). /asyncapi.yaml and /asyncapi.json 404 on both docs and API hosts.'
+    note: 'Partly structural — the event type set is a function of the customer''s pushed schema, so a document would have to be generated per project.'
+  - id: llms-txt
+    conforms: true
+    evidence: 'https://docs.abloatai.com/llms.txt returns 200 with a full, well-formed llms.txt covering 12 sections and every API-reference operation page.'
+  - id: apache-2.0
+    conforms: true
+    evidence: 'info.license {name: Apache License 2.0, identifier: Apache-2.0} in the OpenAPI; LICENSE in github.com/Abloatai/ablo confirms Apache 2.0.'
+  - id: semver
+    conforms: true
+    evidence: 'Pre-1.0 semver across the API and all npm packages, released in lockstep at 0.55.0.'
+certifications: []
+certifications_note: >-
+  NONE published. No SOC 2, ISO 27001, PCI DSS, HIPAA, FedRAMP or GDPR posture is stated anywhere on
+  the site, docs or GitHub org. trust.abloatai.com does not resolve (404) and www.abloatai.com/security
+  is an SPA soft-200 with the generic marketing shell rather than a security page. The only
+  compliance-adjacent commitments are Enterprise contract terms on the pricing page (customer-managed
+  encryption keys, private networking, single sign-on, audit log export) — capabilities, not attestations.
+  No Compliance pointer is emitted, because there is no published compliance program to point at.
+security_posture_observed:
+  method: probed
+  note: 'What Ablo does not certify it does at least implement — the API host returns a strict security header set.'
+  headers:
+    strict-transport-security: max-age=31536000; includeSubDomains
+    content-security-policy: "default-src 'none'; frame-ancestors 'none'"
+    x-content-type-options: nosniff
+    x-frame-options: DENY
+    referrer-policy: strict-origin-when-cross-origin
+    permissions-policy: geolocation=(), microphone=(), camera=()
+  tls: TLSv1.3
+  caa: ['pki.goog', 'sectigo.com', 'amazon.com', 'letsencrypt.org']
+  dnssec: false
+  spf: false
+  dmarc: 'present, policy p=none'
+  data_residency_note: 'Ablo holds only the ordered transaction log and coordination state; customer rows stay in the customer''s own Postgres. That materially narrows the data-processing surface a compliance review would cover.'
+x-evidence:
+  - {url: 'https://docs.abloatai.com/openapi.json', http_status: 200}
+  - {url: 'https://docs.abloatai.com/llms.txt', http_status: 200}
+  - {url: 'https://www.abloatai.com/api/mcp', http_status: 200}
+  - {url: 'https://trust.abloatai.com/', http_status: 404}
+  - {url: 'https://api.abloatai.com/.well-known/security.txt', http_status: 404}

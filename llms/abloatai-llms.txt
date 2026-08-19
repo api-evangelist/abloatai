@@ -1,0 +1,131 @@
+# Ablo Docs
+
+> Collaboration infrastructure for AI agents: one API for agents, apps, and services to claim, change, and confirm the same rows.
+
+## Get Started
+
+- [Ablo Docs](https://docs.abloatai.com/): Collaboration infrastructure for AI agents: one API for agents, apps, and services to claim, change, and confirm the same rows.
+- [Quickstart](https://docs.abloatai.com/quickstart): Make your first coordinated write, on the Postgres you already have.
+- [Integration Guide](https://docs.abloatai.com/integration-guide): The canonical end-to-end integration, added to an existing product one model at a time.
+- [Deployment](https://docs.abloatai.com/deployment): What production takes: a database Ablo can reach, a key minted for the plane you mean, and a schema push in the deploy.
+- [Pricing](https://docs.abloatai.com/pricing): A monthly floor, and metered sync operations charged against it. Generated from the pricing contract, so every number here is the one the invoice uses.
+- [CLI](https://docs.abloatai.com/cli): Scaffold a schema, connect a database, push it, and watch it sync.
+- [Debugging & Logs](https://docs.abloatai.com/debugging): Watch claims, queueing, and grants as they happen while you build.
+
+## Concepts
+
+- [How Ablo Works](https://docs.abloatai.com/how-it-works): You write through Ablo, Ablo writes to your Postgres, and the write-ahead log confirms it.
+- [Identity & Sync Groups](https://docs.abloatai.com/identity): Who is connecting, and which slice of state they are allowed to see.
+- [Change Propagation](https://docs.abloatai.com/groups): How one row's change reaches the rows and actors that depend on it.
+- [Coordination](https://docs.abloatai.com/coordination): Choose plain writes, functional updates, stale guards, or claims without losing concurrent work.
+- [Interaction Model](https://docs.abloatai.com/interaction-model): The one write path every actor shares: load, claim, update, confirm.
+- [Schema Contract](https://docs.abloatai.com/schema-contract): One schema becomes typed clients, agent writes, interface reads, and the hosted push.
+- [Guarantees](https://docs.abloatai.com/guarantees): Exactly what a confirmed write, a rejected stale write, and a held claim each promise.
+- [Idempotency](https://docs.abloatai.com/idempotency): Make a retried write safe: the same key never applies the same change twice.
+- [Client Behavior](https://docs.abloatai.com/client-behavior): Per-write options, claim behavior, and which errors are safe to retry.
+
+## Authority
+
+- [Projects](https://docs.abloatai.com/projects): One organization, many apps — each with its own schema, data planes, and keys.
+- [API Keys](https://docs.abloatai.com/api-keys): The credential that carries an agent's identity and bounds what it may write.
+- [Sessions](https://docs.abloatai.com/sessions): Short-lived scoped credentials your backend mints for a browser or an agent.
+- [Customer Organizations](https://docs.abloatai.com/customer-organizations): Serve many customer organizations from one backend and one shared schema without weakening tenant isolation.
+- [Audit log](https://docs.abloatai.com/audit): Trace any committed change back to the key that made it, and to the person behind that key.
+
+## Storage
+
+- [Connect Your Database](https://docs.abloatai.com/data-sources): Keep the rows in your own Postgres while Ablo coordinates and confirms every write.
+- [Operating on Your Database](https://docs.abloatai.com/operating-on-your-database): Which actions are read-only, which writes need a guard, and which changes belong to a human.
+- [Session Settings](https://docs.abloatai.com/session-settings): Point your row-level-security policies at Ablo's writes, by naming the Postgres session settings they already read.
+
+## Agents
+
+- [Agents](https://docs.abloatai.com/agents): The stateless participant: wake on a trigger, read, claim, commit, go idle.
+- [Agent Messaging](https://docs.abloatai.com/agent-messaging): Durable handoffs between agents, linked to the claim they are about.
+
+## Integrations
+
+- [Integrations](https://docs.abloatai.com/integrations): Compose Ablo's authoritative shared-state operations with the runtimes that execute, schedule, or ingest work in your application.
+- [Temporal for long-running tasks](https://docs.abloatai.com/integrations/temporal): Run long-lived, retryable agent records with Temporal while Ablo makes each shared-state effect typed, idempotent, and authoritative.
+- [Inngest for long-running tasks](https://docs.abloatai.com/integrations/inngest): Run event-driven, retryable agent records with Inngest while Ablo makes each shared-state effect typed, idempotent, and authoritative.
+
+## Webhooks
+
+- [Webhooks](https://docs.abloatai.com/webhooks): Stream the committed transaction log to your own systems as signed events.
+
+## Frontend
+
+- [React](https://docs.abloatai.com/react): Provider, hooks, and reactive reads for the interfaces people watch agent work arrive in.
+
+## Examples
+
+- [AI SDK Tool](https://docs.abloatai.com/examples/ai-sdk-tool): Give an AI SDK agent safe access to the same typed Ablo resources as your backend.
+- [Agent + Human](https://docs.abloatai.com/examples/agent-human): An agent that yields the row when a person is already holding it.
+- [Scoped Agent](https://docs.abloatai.com/examples/scoped-agent): Narrow an agent to a single record's audience, so its writes reach that group and no one else.
+- [Server Agent](https://docs.abloatai.com/examples/server-agent): A stateless schema-backed worker: wake, claim, commit, go idle.
+- [Existing Python Backend](https://docs.abloatai.com/examples/existing-python-backend): Add agent coordination to a Python API server without replacing it.
+- [Next.js Example](https://docs.abloatai.com/examples/nextjs): App-router setup: the two clients, the session route, and reactive reads.
+
+## MCP
+
+- [Model Context Protocol](https://docs.abloatai.com/mcp): Two MCP servers for two different jobs — one of them is a data plane, one is not.
+- [Claude Code](https://docs.abloatai.com/mcp/claude-code): Point Claude Code at your models through the coordination MCP server.
+- [Cursor](https://docs.abloatai.com/mcp/cursor): Point Cursor at your models through the coordination MCP server.
+- [Windsurf](https://docs.abloatai.com/mcp/windsurf): Point Windsurf at your models through the coordination MCP server.
+
+## SDK Reference
+
+- [API](https://docs.abloatai.com/api): The per-method reference for every model call an agent or an interface can make.
+- [Error codes](https://docs.abloatai.com/errors): Every error Ablo returns, by category. This page is generated from the canonical registry — its anchors are the target of each error's doc_url.
+- [Upgrade Guide](https://docs.abloatai.com/migration): A safe workflow for upgrading the pre-1.0 SDK.
+
+## Other
+
+- [Ablo API](https://docs.abloatai.com/api-reference)
+- [Create an isolated child branch](https://docs.abloatai.com/api-reference/branches/createbranch)
+- [Delete a non-root branch and revoke its credentials](https://docs.abloatai.com/api-reference/branches/deletebranch)
+- [Retrieve a branch by immutable id](https://docs.abloatai.com/api-reference/branches/getbranch)
+- [Diagnose one branch](https://docs.abloatai.com/api-reference/branches/getbranchstatus)
+- [List transaction branches for the credential project](https://docs.abloatai.com/api-reference/branches/listbranches)
+- [Mint an expiring branch-bound test credential](https://docs.abloatai.com/api-reference/branches/mintbranchcredential)
+- [Claim a row named in the body](https://docs.abloatai.com/api-reference/claims/acquireclaim)
+- [Claim a row (acquire lease)](https://docs.abloatai.com/api-reference/claims/acquiremodelclaim)
+- [Poll a claim for its current state](https://docs.abloatai.com/api-reference/claims/getclaim)
+- [Heartbeat a claim by id — held or queued](https://docs.abloatai.com/api-reference/claims/heartbeatclaim)
+- [Heartbeat every lease you hold, in one request](https://docs.abloatai.com/api-reference/claims/heartbeatclaims)
+- [Heartbeat a held claim (extend the lease for long-running work)](https://docs.abloatai.com/api-reference/claims/heartbeatmodelclaim)
+- [List who holds what, and who waits](https://docs.abloatai.com/api-reference/claims/listclaims)
+- [Release a claim, or leave the wait line](https://docs.abloatai.com/api-reference/claims/releaseclaim)
+- [Release a claim](https://docs.abloatai.com/api-reference/claims/releasemodelclaim)
+- [Reorder the wait-line (privileged)](https://docs.abloatai.com/api-reference/claims/reordermodelclaimqueue)
+- [Commit a batch of operations atomically, and/or register durable premises](https://docs.abloatai.com/api-reference/commits/commit)
+- [Retrieve a commit record](https://docs.abloatai.com/api-reference/commits/getcommit)
+- [List commit records](https://docs.abloatai.com/api-reference/commits/listcommits)
+- [Inspect a capability](https://docs.abloatai.com/api-reference/credentials/getcapability)
+- [Mint a capability for an agent or system](https://docs.abloatai.com/api-reference/credentials/mintcapability)
+- [Mint a short-lived session credential](https://docs.abloatai.com/api-reference/credentials/mintephemeralkey)
+- [Revoke a capability](https://docs.abloatai.com/api-reference/credentials/revokecapability)
+- [Rotate a capability, keeping its grant](https://docs.abloatai.com/api-reference/credentials/rotatecapability)
+- [How much of what was recorded could reach anyone](https://docs.abloatai.com/api-reference/logs/getlogdelivery)
+- [Tail what changed](https://docs.abloatai.com/api-reference/logs/listlogentries)
+- [Create a row](https://docs.abloatai.com/api-reference/models/createmodelrow)
+- [Delete a row](https://docs.abloatai.com/api-reference/models/deletemodelrow)
+- [Retrieve a row](https://docs.abloatai.com/api-reference/models/getmodelrow)
+- [List rows of a model](https://docs.abloatai.com/api-reference/models/listmodelrows)
+- [Update a row](https://docs.abloatai.com/api-reference/models/updatemodelrow)
+- [What the models look like](https://docs.abloatai.com/api-reference/schema/getschema)
+- [Branch-first development](https://docs.abloatai.com/branch-development): Understand exactly what `ablo dev` prepares, what it watches, and how each Git branch gets an isolated Ablo schema and credential.
+- [v0.44.0](https://docs.abloatai.com/changelog/44.0)
+- [v0.45.0](https://docs.abloatai.com/changelog/45.0)
+- [v0.46.0](https://docs.abloatai.com/changelog/46.0)
+- [v0.47.0](https://docs.abloatai.com/changelog/47.0)
+- [v0.48.0](https://docs.abloatai.com/changelog/48.0)
+- [v0.49.0](https://docs.abloatai.com/changelog/49.0)
+- [v0.50.0](https://docs.abloatai.com/changelog/50.0)
+- [v0.51.0](https://docs.abloatai.com/changelog/51.0)
+- [v0.52.0](https://docs.abloatai.com/changelog/52.0)
+- [v0.53.0](https://docs.abloatai.com/changelog/53.0)
+- [v0.54.0](https://docs.abloatai.com/changelog/54.0)
+- [v0.55.0](https://docs.abloatai.com/changelog/55.0)
+- [Concurrency Convention](https://docs.abloatai.com/concurrency-convention): What Ablo checks when a guarded write depends on earlier state.
+- [Environment resolution](https://docs.abloatai.com/debugging-environment)

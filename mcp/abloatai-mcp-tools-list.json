@@ -1,0 +1,144 @@
+{
+    "result": {
+        "tools": [
+            {
+                "name": "search_ablo_docs",
+                "title": "Search @abloatai/ablo Docs",
+                "description": "Search @abloatai/ablo documentation by keyword. Returns ranked matches with excerpts. Follow up with `get_recipe` on the top hit for the full content.",
+                "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "The search phrase. Matched case-insensitively against every doc title + body."
+                        },
+                        "limit": {
+                            "default": 5,
+                            "description": "Maximum number of results to return (default 5, max 20).",
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 20
+                        }
+                    },
+                    "required": [
+                        "query"
+                    ]
+                },
+                "execution": {
+                    "taskSupport": "forbidden"
+                }
+            },
+            {
+                "name": "get_recipe",
+                "title": "Get @abloatai/ablo Recipe",
+                "description": "Return the full markdown content of a single @abloatai/ablo doc. Use this after `search_ablo_docs` identifies the right file, or directly when you know the recipe name. Common names: readme, quickstart, integration-guide, guarantees, client-behavior, data-sources, examples/existing-python-backend, api, examples/ai-sdk-tool, examples/server-agent, agents, llms.",
+                "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Recipe / doc file name without the .md extension."
+                        }
+                    },
+                    "required": [
+                        "name"
+                    ]
+                },
+                "execution": {
+                    "taskSupport": "forbidden"
+                }
+            },
+            {
+                "name": "get_api_surface",
+                "title": "Get @abloatai/ablo API Surface",
+                "description": "Return the structured export list for a @abloatai/ablo subpath. Pass no argument to list every subpath. Use this to discover what exists before writing integration code.",
+                "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                        "subpath": {
+                            "description": "Subpath to inspect (e.g. \"@abloatai/ablo\"). Omit to list every subpath. Accepts short form: \"react\", \"schema\", \"testing\".",
+                            "type": "string"
+                        }
+                    }
+                },
+                "execution": {
+                    "taskSupport": "forbidden"
+                }
+            },
+            {
+                "name": "validate_schema",
+                "title": "Validate @abloatai/ablo Schema",
+                "description": "Lint a user's `defineSchema` code against the DSL rules (camelCase fields, groups sync routing, legacy builders, load strategies). Returns a structured issue list. Call this BEFORE writing the schema file \u2014 fixes here are cheaper than fixes after the user runs the app.",
+                "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                        "code": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "The TypeScript source of the schema file (or just the defineSchema block)."
+                        }
+                    },
+                    "required": [
+                        "code"
+                    ]
+                },
+                "execution": {
+                    "taskSupport": "forbidden"
+                }
+            },
+            {
+                "name": "scaffold_app",
+                "title": "Scaffold @abloatai/ablo App",
+                "description": "Emit a starter file tree for a schema-first @abloatai/ablo integration. Pick `next` for a route handler, `node-agent` for a backend worker, or `plain` for framework-agnostic usage.",
+                "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                        "framework": {
+                            "type": "string",
+                            "enum": [
+                                "next",
+                                "node-agent",
+                                "plain"
+                            ],
+                            "description": "Which template to emit."
+                        },
+                        "appName": {
+                            "default": "my-ablo-app",
+                            "description": "Display name for the starter. Used in README + package.json.",
+                            "type": "string"
+                        },
+                        "modelName": {
+                            "default": "records",
+                            "description": "Model name (lowercase, plural). Used throughout the starter files.",
+                            "type": "string"
+                        },
+                        "storage": {
+                            "default": "direct",
+                            "description": "How Ablo reaches your Postgres. `direct` (default): set DATABASE_URL and run `ablo migrate` to provision your model tables in your OWN Postgres. `endpoint`: keep DB credentials in your backend and expose a Data Source endpoint Ablo calls (Ablo never sees DATABASE_URL). There is no Ablo-hosted-rows option \u2014 you always bring a Postgres.",
+                            "type": "string",
+                            "enum": [
+                                "direct",
+                                "endpoint"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "framework"
+                    ]
+                },
+                "execution": {
+                    "taskSupport": "forbidden"
+                }
+            }
+        ]
+    },
+    "jsonrpc": "2.0",
+    "id": 1
+}

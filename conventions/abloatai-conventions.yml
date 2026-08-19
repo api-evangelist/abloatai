@@ -1,0 +1,122 @@
+generated: '2026-08-19'
+method: searched
+source: https://docs.abloatai.com/idempotency + https://docs.abloatai.com/client-behavior + https://docs.abloatai.com/concurrency-convention + openapi/abloatai-api-openapi.yml
+note: >-
+  Ablo is a coordination API, so its cross-cutting semantics ARE the product: idempotency,
+  stale-guard concurrency and durable claims are not conveniences layered on CRUD, they are what
+  the API sells. The conventions below are unusually well specified for a pre-1.0 provider.
+authentication:
+  style: bearer API key
+  detail: authentication/ablo-authentication.yml
+idempotency:
+  supported: true
+  docs: https://docs.abloatai.com/idempotency
+  mechanisms:
+    - kind: header
+      name: Idempotency-Key
+      max_length: 255
+      applies_to: [createBranch, commit]
+      spec_evidence: 'openapi parameters[] name=Idempotency-Key in=header maxLength=255'
+      description: 'Replay identity. Reuse the same key only for an identical request.'
+    - kind: body-field
+      name: idempotencyKey
+      applies_to: [createModelRow, updateModelRow, deleteModelRow]
+      spec_evidence: 'openapi requestBody properties.idempotencyKey type=string'
+  auto_generated: 'The SDK generates a key when you omit it, which makes an in-process retry safe automatically — but not a retry across a process restart, because a new process generates a new key.'
+  key_rule: >-
+    Derive the key from the business event, never from the attempt. A key built from
+    crypto.randomUUID() at the call site is regenerated on every retry and protects nothing. Never
+    derive from a timestamp, an attempt counter or a random value.
+  scope: 'Per organization AND per participant — not global. Two agents may use the same key string without colliding, and one agent can never replay another''s result.'
+  implementation: >-
+    The key is the execution lock on the write itself, not a lookup before it: a pending row keyed by
+    caller+key is inserted inside the same transaction as the mutation, and a unique index makes that
+    insert the lock. There is no window where a write has happened but its key is unrecorded.
+  retention:
+    default: 24h
+    note: 'Treat 24 hours as how long a retry is guaranteed safe, not as permanent deduplication. A nightly job reusing yesterday''s key executes again.'
+    data_source_writes: permanent
+    expiry_error: idempotency_key_expired (409)
+  failure_semantics:
+    replays_failures: false
+    detail: >-
+      UNUSUAL AND IMPORTANT — only SUCCESSFUL writes are recorded. A write that failed leaves no
+      idempotency record, so retrying with the same key EXECUTES FRESH rather than replaying the
+      error. Ablo deliberately differs from most request/response APIs here. A retry after an
+      ambiguous failure (timeout, dropped socket) is therefore a real execution: retry with the SAME
+      key so a landed write replays and an unlanded one runs now.
+  outcomes:
+    - {sent: new key, result: runs the write}
+    - {sent: same key + same request + finished, result: replays the recorded result; the write does not run again}
+    - {sent: same key + same request + still running, result: waits for the in-flight attempt then replays; rejects with idempotency_conflict (409) if the original outlasts a short wait}
+    - {sent: same key + different request, result: rejected with idempotency_conflict (409) — a key is bound to the request it first arrived with}
+  route_pinning:
+    supported: true
+    error: source_transport_pinned (409)
+    detail: 'A key is bound to the route its first attempt took; switching between a direct data source and the endpoint fallback on a retry is refused rather than risking a double apply.'
+  billing_link: 'A retry with the same Idempotency-Key is metered once — the meter deduplicates on the same key.'
+concurrency:
+  docs: https://docs.abloatai.com/concurrency-convention
+  default: last-write-wins when no active claim applies
+  guards:
+    - {name: readAt, kind: stale guard, description: 'State cursor the write was based on; the write is rejected if the row moved past it.'}
+    - {name: onStale, kind: stale policy, values: [reject, overwrite, notify], description: 'What to do when a premise the write depends on has changed.'}
+    - {name: reads, kind: durable premise, max_items: 500, description: 'Rows or groups the write depends on, each with its own readAt/onStale.'}
+    - {name: track, kind: durable premise, max_items: 500}
+    - {name: claim, kind: lease, description: 'Write under a held claim; rejected if the row changed underneath you.'}
+  claims:
+    model: 'Durable lease with a wait-line — claims do NOT lock. A second writer waits for the holder and is handed the FRESH row, so writers serialize instead of clobbering.'
+    acquire: 'POST /v1/claims or POST /v1/models/{model}/{id}/claim — 201 acquired, 202 queued.'
+    heartbeat: 'heartbeatClaim / heartbeatClaims / heartbeatModelClaim extend the lease for long-running work.'
+    release: 'releaseClaim / releaseModelClaim; the SDK auto-releases via `await using`.'
+    queue_control: 'reorderModelClaimQueue reorders the wait-line (privileged).'
+pagination:
+  style: cursor
+  request_params: [limit, cursor, order_by, order]
+  deprecated_params:
+    - {name: starting_after, replacement: cursor, marked_deprecated_in_spec: true, operations: [listModelRows, listBranches], note: 'Deprecated spelling of cursor, honoured until it is removed.'}
+  response_fields: [object, data, has_more, next_cursor, model, stamp]
+  cursor_semantics: 'Opaque string — copy it unchanged into the next request. next_cursor feeds cursor; stamp is the watermark the page was read at.'
+  envelope: 'object: "list" — a Stripe-shaped list envelope.'
+  schema: openapi/abloatai-api-openapi.yml#/components/schemas/ModelPage
+filtering:
+  params: [where, filter, orderBy, limit, offset, state]
+  note: 'SDK-level list options (client-behavior docs); the REST surface exposes limit/order_by/order/cursor.'
+request_tracing:
+  header: X-Request-Id
+  cors_exposed: true
+  body_field: request_id
+  format: 'req_<uuid>'
+  observed: 'req_7616c6a2-90fb-43d1-8ad2-531242b20cb2 on a live 401'
+versioning:
+  api_path: /v1
+  contract_headers:
+    - {header: Ablo-Version, value_observed: '2026-08-15', meaning: 'date-stamped error/contract version'}
+    - {header: Ablo-Protocol-Version, value_observed: '1', meaning: 'wire protocol version'}
+  product_version: 0.55.0 (info.version in the OpenAPI; matches the npm release train)
+  detail: lifecycle/ablo-lifecycle.yml
+error_envelope:
+  format: custom AbloError JSON object (NOT RFC 9457 / application/problem+json)
+  fields: [type, code, message, doc_url, request_id, event_id, param, errors]
+  self_documenting: 'Every error carries a doc_url deep-linking to its anchor in the published registry.'
+  detail: errors/ablo-error-codes.yml
+rate_limit_signalling:
+  detail: rate-limits/ablo-rate-limits.yml
+  headers_documented: [X-Usage-Limit, X-Usage-Used, X-Usage-Remaining, X-Usage-Reset, Retry-After]
+  headers_observed_on_mcp: [x-ratelimit-limit, x-ratelimit-remaining, x-ratelimit-reset]
+caching:
+  etag: 'ETag is CORS-exposed (access-control-expose-headers: ETag,X-Request-Id,X-Auth-Failure,Ablo-Protocol-Version).'
+cors:
+  allow_origin: '*'
+  expose_headers: [ETag, X-Request-Id, X-Auth-Failure, Ablo-Protocol-Version]
+transport:
+  http: 'https://api.abloatai.com/api/v1'
+  websocket: 'A WSS realtime stream carries the same error envelope; no AsyncAPI document is published.'
+  webhooks: asyncapi/ablo-webhooks.yml
+security_headers_observed:
+  strict-transport-security: max-age=31536000; includeSubDomains
+  content-security-policy: "default-src 'none'; frame-ancestors 'none'"
+  x-content-type-options: nosniff
+  x-frame-options: DENY
+  referrer-policy: strict-origin-when-cross-origin
+  permissions-policy: geolocation=(), microphone=(), camera=()
