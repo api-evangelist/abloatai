@@ -14,6 +14,17 @@ created: '2026-08-19'
 modified: '2026-08-19'
 specificationVersion: '0.21'
 tags:
+- Agent Infrastructure
+- multi-agent-coordination
+- concurrency-control
+- State Management
+- Database
+- Postgres
+- real-time-sync
+- MCP
+- Developer Tools
+- backend-infrastructure
+tags_raw:
 - agent-infrastructure
 - multi-agent-coordination
 - concurrency-control
@@ -35,6 +46,10 @@ apis:
   humanURL: https://docs.abloatai.com/mcp
   baseURL: https://www.abloatai.com/api/mcp
   tags:
+  - MCP
+  - Agent Infrastructure
+  - Developer Tools
+  tags_raw:
   - mcp
   - agent-infrastructure
   - developer-tools
@@ -53,6 +68,8 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
+  - Branches
+  tags_raw:
   - branches
   properties:
   - type: OpenAPI
@@ -81,6 +98,8 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
+  - Claims
+  tags_raw:
   - claims
   properties:
   - type: OpenAPI
@@ -109,6 +128,8 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
+  - Commits
+  tags_raw:
   - commits
   properties:
   - type: OpenAPI
@@ -137,6 +158,8 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
+  - Credentials
+  tags_raw:
   - credentials
   properties:
   - type: OpenAPI
@@ -165,6 +188,8 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
+  - Logs
+  tags_raw:
   - logs
   properties:
   - type: OpenAPI
@@ -193,6 +218,8 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
+  - Models
+  tags_raw:
   - models
   properties:
   - type: OpenAPI
@@ -221,6 +248,8 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
+  - Schema
+  tags_raw:
   - schema
   properties:
   - type: OpenAPI
