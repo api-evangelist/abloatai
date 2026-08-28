@@ -9,6 +9,19 @@ description: 'Ablo is collaboration infrastructure for AI agents: one API that l
   a 32-operation OpenAPI 3.1 REST API, a WSS realtime stream, a TypeScript SDK and CLI released in lockstep
   with the API, and two MCP servers.'
 url: https://abloatai.apievangelist.com/apis.yml
+deliveryModel:
+  model: unknown
+  open_source: unknown
+  commercial: true
+  callable_host: true
+  label: Delivery model not determined — needs a product licence on record
+  confidence: low
+  source:
+  - openapi
+  - pricing
+  - repository-unlicensed
+  generated: '2026-08-28'
+  method: derived
 image: https://www.abloatai.com/logo-black.svg
 created: '2026-08-19'
 modified: '2026-08-19'
