@@ -27,12 +27,12 @@ created: '2026-08-19'
 modified: '2026-08-19'
 specificationVersion: '0.21'
 tags:
-- Agent Infrastructure
+- agent-infrastructure
 - multi-agent-coordination
 - concurrency-control
-- State Management
+- state-management
 - Database
-- Postgres
+- postgres
 - real-time-sync
 - MCP
 - Developer Tools
@@ -60,7 +60,7 @@ apis:
   baseURL: https://www.abloatai.com/api/mcp
   tags:
   - MCP
-  - Agent Infrastructure
+  - agent-infrastructure
   - Developer Tools
   tags_raw:
   - mcp
@@ -81,7 +81,7 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
-  - Branches
+  - branches
   tags_raw:
   - branches
   properties:
@@ -111,7 +111,7 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
-  - Claims
+  - claims
   tags_raw:
   - claims
   properties:
@@ -141,7 +141,7 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
-  - Commits
+  - commits
   tags_raw:
   - commits
   properties:
@@ -171,7 +171,7 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
-  - Credentials
+  - credentials
   tags_raw:
   - credentials
   properties:
