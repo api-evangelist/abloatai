@@ -27,12 +27,12 @@ created: '2026-08-19'
 modified: '2026-08-19'
 specificationVersion: '0.21'
 tags:
-- agent-infrastructure
+- Agent Infrastructure
 - multi-agent-coordination
 - concurrency-control
-- state-management
+- State Management
 - Database
-- postgres
+- Postgres
 - real-time-sync
 - MCP
 - Developer Tools
@@ -60,7 +60,7 @@ apis:
   baseURL: https://www.abloatai.com/api/mcp
   tags:
   - MCP
-  - agent-infrastructure
+  - Agent Infrastructure
   - Developer Tools
   tags_raw:
   - mcp
@@ -81,7 +81,7 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
-  - branches
+  - Branches
   tags_raw:
   - branches
   properties:
@@ -111,7 +111,7 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
-  - claims
+  - Claims
   tags_raw:
   - claims
   properties:
@@ -141,7 +141,7 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
-  - commits
+  - Commits
   tags_raw:
   - commits
   properties:
@@ -171,7 +171,7 @@ apis:
   humanURL: https://docs.abloatai.com/api-reference
   baseURL: https://api.abloatai.com/api
   tags:
-  - credentials
+  - Credentials
   tags_raw:
   - credentials
   properties:
@@ -295,6 +295,9 @@ generated:
   confidence: 90
   at: '2026-08-19T10:57:24.801Z'
 common:
+- type: License
+  name: Apache-2.0
+  url: https://github.com/Abloatai/ablo/blob/main/LICENSE
 - type: DeveloperPortal
   url: https://docs.abloatai.com
 - type: Documentation
