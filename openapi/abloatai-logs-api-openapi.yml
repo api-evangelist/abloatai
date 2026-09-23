@@ -14,12 +14,12 @@ servers:
 security:
 - bearerAuth: []
 tags:
-- name: logs
+- name: Logs
 paths:
   /v1/logs:
     get:
       tags:
-      - logs
+      - Logs
       summary: Tail what changed
       description: How a caller without a socket learns what its peers did. Omit `after` for the most recent entries, then copy each page's `next_cursor` back as `after` to walk forward. Scope is taken from your key — organization, branch and sync groups — so a caller cannot widen what it sees by asking.
       parameters:
@@ -118,7 +118,7 @@ paths:
   /v1/logs/delivery:
     get:
       tags:
-      - logs
+      - Logs
       summary: How much of what was recorded could reach anyone
       description: The fan-out verdict for your plane over a recent window. `recorded` counts the changes the log accepted; `unroutable` counts the ones excluded from delivery because they carried no sync group, which is the state a row reaches when it was written into your database outside Ablo and so carries no tenancy value. Any number above zero means writes are landing that no subscriber is told about.
       responses:
@@ -467,6 +467,9 @@ components:
       - has_more
       - next_cursor
       additionalProperties: false
+    Cursor:
+      type: string
+      description: An opaque pagination position. Copy it unchanged into the next request.
     ErrorEnvelope:
       type: object
       properties:
@@ -504,9 +507,6 @@ components:
       - type
       - message
       additionalProperties: true
-    Cursor:
-      type: string
-      description: An opaque pagination position. Copy it unchanged into the next request.
   securitySchemes:
     bearerAuth:
       type: http

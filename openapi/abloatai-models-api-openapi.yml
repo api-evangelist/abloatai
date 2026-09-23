@@ -14,12 +14,12 @@ servers:
 security:
 - bearerAuth: []
 tags:
-- name: models
+- name: Models
 paths:
   /v1/models/{model}:
     get:
       tags:
-      - models
+      - Models
       summary: List rows of a model
       parameters:
       - name: model
@@ -118,7 +118,7 @@ paths:
       operationId: listModelRows
     post:
       tags:
-      - models
+      - Models
       summary: Create a row
       description: The record travels in `data`; `id` is yours to choose — see the field for the derivation that makes a retry idempotent.
       parameters:
@@ -324,7 +324,7 @@ paths:
   /v1/models/{model}/{id}:
     get:
       tags:
-      - models
+      - Models
       summary: Retrieve a row
       parameters:
       - name: model
@@ -402,7 +402,7 @@ paths:
       operationId: getModelRow
     patch:
       tags:
-      - models
+      - Models
       summary: Update a row
       description: 'Pass `claim` and `readAt` together: the lease says nobody else is writing, the watermark says the row has not moved since you read it.'
       parameters:
@@ -612,7 +612,7 @@ paths:
       operationId: updateModelRow
     delete:
       tags:
-      - models
+      - Models
       summary: Delete a row
       parameters:
       - name: model
@@ -849,9 +849,52 @@ components:
       - stamp
       - claims
       additionalProperties: false
-    Cursor:
-      type: string
-      description: An opaque pagination position. Copy it unchanged into the next request.
+    ModelPage:
+      type: object
+      properties:
+        object:
+          type: string
+          const: list
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        has_more:
+          type: boolean
+        next_cursor:
+          oneOf:
+          - $ref: '#/components/schemas/Cursor'
+          - type: 'null'
+        model:
+          type: string
+        stamp:
+          type: number
+        evidence:
+          readOnly: true
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                minLength: 1
+              stamp:
+                type: integer
+                minimum: 0
+                maximum: 9007199254740991
+            required:
+            - id
+            - stamp
+            additionalProperties: false
+      required:
+      - object
+      - data
+      - has_more
+      - next_cursor
+      - model
+      - stamp
+      additionalProperties: false
     Claim:
       readOnly: true
       type: object
@@ -972,6 +1015,9 @@ components:
       - type
       - message
       additionalProperties: true
+    Cursor:
+      type: string
+      description: An opaque pagination position. Copy it unchanged into the next request.
     CommitReceipt:
       oneOf:
       - type: object
@@ -1652,52 +1698,6 @@ components:
         additionalProperties: false
       discriminator:
         propertyName: status
-    ModelPage:
-      type: object
-      properties:
-        object:
-          type: string
-          const: list
-        data:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        has_more:
-          type: boolean
-        next_cursor:
-          oneOf:
-          - $ref: '#/components/schemas/Cursor'
-          - type: 'null'
-        model:
-          type: string
-        stamp:
-          type: number
-        evidence:
-          readOnly: true
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-                minLength: 1
-              stamp:
-                type: integer
-                minimum: 0
-                maximum: 9007199254740991
-            required:
-            - id
-            - stamp
-            additionalProperties: false
-      required:
-      - object
-      - data
-      - has_more
-      - next_cursor
-      - model
-      - stamp
-      additionalProperties: false
   securitySchemes:
     bearerAuth:
       type: http

@@ -14,12 +14,12 @@ servers:
 security:
 - bearerAuth: []
 tags:
-- name: branches
+- name: Branches
 paths:
   /v1/branches:
     get:
       tags:
-      - branches
+      - Branches
       summary: List transaction branches for the credential project
       parameters:
       - name: limit
@@ -194,7 +194,7 @@ paths:
       operationId: listBranches
     post:
       tags:
-      - branches
+      - Branches
       summary: Create an isolated child branch
       description: The returned id is immutable; retain it for automation. The slug is a project-scoped human handle.
       parameters:
@@ -375,7 +375,7 @@ paths:
   /v1/branches/{id}:
     get:
       tags:
-      - branches
+      - Branches
       summary: Retrieve a branch by immutable id
       parameters:
       - name: id
@@ -516,7 +516,7 @@ paths:
       operationId: getBranch
     delete:
       tags:
-      - branches
+      - Branches
       summary: Delete a non-root branch and revoke its credentials
       parameters:
       - name: id
@@ -658,7 +658,7 @@ paths:
   /v1/branches/{id}/credentials:
     post:
       tags:
-      - branches
+      - Branches
       summary: Mint an expiring branch-bound test credential
       parameters:
       - name: id
@@ -759,7 +759,7 @@ paths:
   /v1/branches/{id}/status:
     get:
       tags:
-      - branches
+      - Branches
       summary: Diagnose one branch
       description: Returns branch lifecycle, active schema, compatibility with the parent schema, safe datasource coordinates, and readiness blockers.
       parameters:

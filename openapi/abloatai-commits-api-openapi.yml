@@ -14,12 +14,12 @@ servers:
 security:
 - bearerAuth: []
 tags:
-- name: commits
+- name: Commits
 paths:
   /v1/commits:
     get:
       tags:
-      - commits
+      - Commits
       summary: List commit records
       parameters:
       - name: actorId
@@ -1939,7 +1939,7 @@ paths:
       operationId: listCommits
     post:
       tags:
-      - commits
+      - Commits
       summary: Commit a batch of operations atomically, and/or register durable premises
       parameters:
       - name: Idempotency-Key
@@ -2166,7 +2166,7 @@ paths:
   /v1/commits/{id}:
     get:
       tags:
-      - commits
+      - Commits
       summary: Retrieve a commit record
       parameters:
       - name: id

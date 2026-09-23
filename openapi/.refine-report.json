@@ -1,32 +1,39 @@
 {
-  "provider": "ablo",
+  "provider": "abloatai",
   "sources": [
-    "ablo-api-openapi.yml"
+    "_original/abloatai-openapi-2026-08-19.json"
   ],
   "outputs": [
-    "ablo-branches-api-openapi.yml",
-    "ablo-claims-api-openapi.yml",
-    "ablo-commits-api-openapi.yml",
-    "ablo-credentials-api-openapi.yml",
-    "ablo-logs-api-openapi.yml",
-    "ablo-models-api-openapi.yml",
-    "ablo-schema-api-openapi.yml"
+    "abloatai-branches-api-openapi.yml",
+    "abloatai-claims-api-openapi.yml",
+    "abloatai-commits-api-openapi.yml",
+    "abloatai-credentials-api-openapi.yml",
+    "abloatai-logs-api-openapi.yml",
+    "abloatai-models-api-openapi.yml",
+    "abloatai-schema-api-openapi.yml"
   ],
-  "archived": [
-    "archived openapi/abloatai-api-openapi.yml"
-  ],
+  "archived": [],
   "errors": [],
   "warnings": [],
   "notes": [
-    "ablo-api-openapi.yml: upgraded openapi 3.1.0 -> OpenAPI 3.2.0",
-    "ablo-api-openapi.yml: declared missing tag: branches",
-    "ablo-api-openapi.yml: declared missing tag: claims",
-    "ablo-api-openapi.yml: declared missing tag: commits",
-    "ablo-api-openapi.yml: declared missing tag: credentials",
-    "ablo-api-openapi.yml: declared missing tag: logs",
-    "ablo-api-openapi.yml: declared missing tag: models",
-    "ablo-api-openapi.yml: declared missing tag: schema",
-    "apis.yml register: written (+7 apis, 8 total)"
+    "sourced from openapi/_original/ (1 archived document(s)); previously refined output at the top level was skipped rather than re-split",
+    "abloatai-openapi-2026-08-19.json: upgraded openapi 3.1.0 -> OpenAPI 3.2.0",
+    "abloatai-openapi-2026-08-19.json: declared missing tag: branches",
+    "abloatai-openapi-2026-08-19.json: declared missing tag: claims",
+    "abloatai-openapi-2026-08-19.json: declared missing tag: commits",
+    "abloatai-openapi-2026-08-19.json: declared missing tag: credentials",
+    "abloatai-openapi-2026-08-19.json: declared missing tag: logs",
+    "abloatai-openapi-2026-08-19.json: declared missing tag: models",
+    "abloatai-openapi-2026-08-19.json: declared missing tag: schema",
+    "apis.yml register: already-registered"
   ],
-  "skipped": []
+  "skipped": [
+    "abloatai-branches-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "abloatai-claims-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "abloatai-commits-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "abloatai-credentials-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "abloatai-logs-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "abloatai-models-api-openapi.yml: previously refined output, superseded by openapi/_original/",
+    "abloatai-schema-api-openapi.yml: previously refined output, superseded by openapi/_original/"
+  ]
 }
