@@ -48,7 +48,7 @@ tags:
 - concurrency-control
 - State Management
 - Database
-- Postgres
+- PostgreSQL
 - real-time-sync
 - MCP
 - Developer Tools
@@ -64,6 +64,7 @@ tags_raw:
 - mcp
 - developer-tools
 - backend-infrastructure
+- Postgres
 apis:
 - name: Ablo Integration-Helper MCP Server
   description: 'A public, anonymous, stateless Streamable-HTTP MCP server Ablo runs on its own domain

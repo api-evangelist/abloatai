@@ -467,9 +467,6 @@ components:
       - has_more
       - next_cursor
       additionalProperties: false
-    Cursor:
-      type: string
-      description: An opaque pagination position. Copy it unchanged into the next request.
     ErrorEnvelope:
       type: object
       properties:
@@ -507,6 +504,9 @@ components:
       - type
       - message
       additionalProperties: true
+    Cursor:
+      type: string
+      description: An opaque pagination position. Copy it unchanged into the next request.
   securitySchemes:
     bearerAuth:
       type: http
