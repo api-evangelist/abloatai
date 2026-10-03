@@ -977,6 +977,187 @@ paths:
       operationId: heartbeatClaim
 components:
   schemas:
+    ClaimState:
+      type: object
+      properties:
+        id:
+          type: string
+        position:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        expiresAt:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        fenceToken:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        object:
+          type: string
+          const: claim
+        status:
+          type: string
+          enum:
+          - active
+          - queued
+          - committed
+          - expired
+          - canceled
+      required:
+      - id
+      - object
+      - status
+      additionalProperties: false
+    ClaimHeartbeatBatch:
+      type: object
+      properties:
+        object:
+          type: string
+          const: list
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              claimId:
+                type: string
+              status:
+                type: string
+                enum:
+                - held
+                - queued
+                - lost
+              expiresAt:
+                type: number
+              position:
+                type: number
+              queueDepth:
+                type: number
+            required:
+            - claimId
+            - status
+            additionalProperties: false
+      required:
+      - object
+      - results
+      additionalProperties: false
+    Cursor:
+      type: string
+      description: An opaque pagination position. Copy it unchanged into the next request.
+    ErrorEnvelope:
+      type: object
+      properties:
+        type:
+          type: string
+        code:
+          type: string
+        param:
+          type: string
+        message:
+          type: string
+        doc_url:
+          type: string
+        request_id:
+          type: string
+        event_id:
+          type: string
+        errors:
+          readOnly: true
+          type: array
+          items:
+            readOnly: true
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+              param:
+                type: string
+            required:
+            - message
+            additionalProperties: false
+      required:
+      - type
+      - message
+      additionalProperties: true
+    ClaimQueued:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: claim
+        status:
+          type: string
+          const: queued
+        position:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        heldBy:
+          type: string
+        expiresAt:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        heldByClaim:
+          type: object
+          properties:
+            entityType:
+              type: string
+            entityId:
+              type: string
+            field:
+              type: string
+            fields:
+              readOnly: true
+              type: array
+              items:
+                type: string
+            meta:
+              type: object
+              additionalProperties: true
+            claimId:
+              type: string
+            description:
+              type: string
+            declaredAt:
+              type: number
+            expiresAt:
+              type: number
+            onBehalfOfId:
+              anyOf:
+              - type: string
+              - type: 'null'
+            onBehalfOfKind:
+              anyOf:
+              - type: string
+                enum:
+                - user
+                - agent
+                - system
+              - type: 'null'
+            capabilityId:
+              anyOf:
+              - type: string
+              - type: 'null'
+          required:
+          - entityType
+          - entityId
+          - claimId
+          - declaredAt
+          - expiresAt
+          additionalProperties: false
+      required:
+      - id
+      - object
+      - status
+      - position
+      additionalProperties: false
     Claim:
       readOnly: true
       type: object
@@ -1060,65 +1241,7 @@ components:
       - expiresAt
       - target
       additionalProperties: false
-    ErrorEnvelope:
-      type: object
-      properties:
-        type:
-          type: string
-        code:
-          type: string
-        param:
-          type: string
-        message:
-          type: string
-        doc_url:
-          type: string
-        request_id:
-          type: string
-        event_id:
-          type: string
-        errors:
-          readOnly: true
-          type: array
-          items:
-            readOnly: true
-            type: object
-            properties:
-              code:
-                type: string
-              message:
-                type: string
-              param:
-                type: string
-            required:
-            - message
-            additionalProperties: false
-      required:
-      - type
-      - message
-      additionalProperties: true
-    ClaimAcquire:
-      oneOf:
-      - $ref: '#/components/schemas/ClaimAcquired'
-      - $ref: '#/components/schemas/ClaimQueued'
-      discriminator:
-        propertyName: status
-    ClaimReorder:
-      type: object
-      properties:
-        object:
-          type: string
-          const: claim_reorder
-        reordered:
-          type: boolean
-      required:
-      - object
-      - reordered
-      additionalProperties: false
-    Cursor:
-      type: string
-      description: An opaque pagination position. Copy it unchanged into the next request.
-    ClaimQueued:
+    ClaimAcquired:
       type: object
       properties:
         id:
@@ -1128,116 +1251,29 @@ components:
           const: claim
         status:
           type: string
-          const: queued
-        position:
+          const: active
+        fenceToken:
           type: integer
-          minimum: 0
+          minimum: -9007199254740991
           maximum: 9007199254740991
-        heldBy:
-          type: string
         expiresAt:
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
-        heldByClaim:
-          type: object
-          properties:
-            entityType:
-              type: string
-            entityId:
-              type: string
-            field:
-              type: string
-            fields:
-              readOnly: true
-              type: array
-              items:
-                type: string
-            meta:
-              type: object
-              additionalProperties: true
-            claimId:
-              type: string
-            description:
-              type: string
-            declaredAt:
-              type: number
-            expiresAt:
-              type: number
-            onBehalfOfId:
-              anyOf:
-              - type: string
-              - type: 'null'
-            onBehalfOfKind:
-              anyOf:
-              - type: string
-                enum:
-                - user
-                - agent
-                - system
-              - type: 'null'
-            capabilityId:
-              anyOf:
-              - type: string
-              - type: 'null'
-          required:
-          - entityType
-          - entityId
-          - claimId
-          - declaredAt
-          - expiresAt
-          additionalProperties: false
+        claim:
+          $ref: '#/components/schemas/Claim'
       required:
       - id
       - object
       - status
-      - position
+      - claim
       additionalProperties: false
-    ClaimRelease:
-      type: object
-      properties:
-        object:
-          type: string
-          const: claim_release
-        released:
-          type: boolean
-      required:
-      - object
-      - released
-      additionalProperties: false
-    ClaimHeartbeatBatch:
-      type: object
-      properties:
-        object:
-          type: string
-          const: list
-        results:
-          type: array
-          items:
-            type: object
-            properties:
-              claimId:
-                type: string
-              status:
-                type: string
-                enum:
-                - held
-                - queued
-                - lost
-              expiresAt:
-                type: number
-              position:
-                type: number
-              queueDepth:
-                type: number
-            required:
-            - claimId
-            - status
-            additionalProperties: false
-      required:
-      - object
-      - results
-      additionalProperties: false
+    ClaimAcquire:
+      oneOf:
+      - $ref: '#/components/schemas/ClaimAcquired'
+      - $ref: '#/components/schemas/ClaimQueued'
+      discriminator:
+        propertyName: status
     ClaimHeartbeat:
       type: object
       properties:
@@ -1268,32 +1304,17 @@ components:
       - claimId
       - status
       additionalProperties: false
-    ClaimAcquired:
+    ClaimReorder:
       type: object
       properties:
-        id:
-          type: string
         object:
           type: string
-          const: claim
-        status:
-          type: string
-          const: active
-        fenceToken:
-          type: integer
-          minimum: -9007199254740991
-          maximum: 9007199254740991
-        expiresAt:
-          type: integer
-          minimum: -9007199254740991
-          maximum: 9007199254740991
-        claim:
-          $ref: '#/components/schemas/Claim'
+          const: claim_reorder
+        reordered:
+          type: boolean
       required:
-      - id
       - object
-      - status
-      - claim
+      - reordered
       additionalProperties: false
     ClaimList:
       type: object
@@ -1318,38 +1339,17 @@ components:
       - has_more
       - next_cursor
       additionalProperties: false
-    ClaimState:
+    ClaimRelease:
       type: object
       properties:
-        id:
-          type: string
-        position:
-          type: integer
-          minimum: 0
-          maximum: 9007199254740991
-        expiresAt:
-          type: integer
-          minimum: -9007199254740991
-          maximum: 9007199254740991
-        fenceToken:
-          type: integer
-          minimum: -9007199254740991
-          maximum: 9007199254740991
         object:
           type: string
-          const: claim
-        status:
-          type: string
-          enum:
-          - active
-          - queued
-          - committed
-          - expired
-          - canceled
+          const: claim_release
+        released:
+          type: boolean
       required:
-      - id
       - object
-      - status
+      - released
       additionalProperties: false
   securitySchemes:
     bearerAuth:
