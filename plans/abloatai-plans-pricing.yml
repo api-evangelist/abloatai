@@ -84,3 +84,32 @@ usage_visibility:
     - {code: connection_limit_exceeded, http_status: 429, retryable: true}
 x-evidence:
   - {url: 'https://docs.abloatai.com/pricing', http_status: 200}
+x-canonical:
+  generated: '2026-10-08'
+  vocabulary: all/0-working/economics/plans-canonical.yml
+  models:
+  - hybrid
+  - metered
+  units: []
+  plans:
+  - name: Free
+    access: other
+    model: metered
+    model_how: derived
+    units: []
+    periods:
+    - month
+  - name: Scale
+    access: other
+    model: hybrid
+    model_how: derived
+    units: []
+    periods:
+    - month
+  - name: Enterprise
+    access: other
+    model: hybrid
+    model_how: derived
+    units: []
+    periods:
+    - month
