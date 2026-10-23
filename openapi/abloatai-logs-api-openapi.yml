@@ -512,3 +512,9 @@ components:
       type: http
       scheme: bearer
       description: Your Ablo API key (sk_… / rk_…).
+x-provenance:
+  method: harvested
+  publisher: Ablo
+  source: https://docs.abloatai.com/openapi.json
+  note: split by refine-openapis from the provider's own published document, verified by fetch (openapi/_original/*.fetch.json);
+    stamped by stamp-openapi-provenance.py (roadmap#793)
