@@ -1,4 +1,4 @@
-# abloatai
+# Ablo
 
 <!-- API-EVANGELIST-PROVENANCE:BEGIN -->
 > ### About this repository
@@ -64,4 +64,140 @@
 > Full detail: **[Where this data comes from](https://apievangelist.com/about/where-our-data-comes-from)**
 <!-- API-EVANGELIST-PROVENANCE:END -->
 
-Coordination/collaboration infrastructure for AI agents — one API that lets agents, apps, and services claim, change, and confirm the same database rows using durable claims (leases with wait-lines) plus guarded, idempotent writes that return receipts and reject stale writes.
+Ablo is collaboration infrastructure for AI agents: one API that lets agents, apps and people claim, change and confirm the same database rows without clobbering each other. Rows stay in the customer's own Postgres — Ablo holds only an ordered transaction log and the coordination state — while durable claims (leases with a wait-line, which make a second writer wait and then hand it the fresh row rather than lock), guarded idempotent writes with stale premises, atomic batch commits and signed webhook delivery turn concurrent multi-agent editing into something that serializes instead of racing. The surface is a 32-operation OpenAPI 3.1 REST API, a WSS realtime stream, a TypeScript SDK and CLI released in lockstep with the API, and two MCP servers.
+
+**Areas:** Agent Infrastructure · multi-agent-coordination · concurrency-control · State Management · Database · PostgreSQL · real-time-sync · MCP · Developer Tools · backend-infrastructure
+
+## Ablo on APIs.io
+
+Everything profiled for Ablo is published on APIs.io rather than in this repository. Start at the provider page — **[apis.io/providers/abloatai/](https://apis.io/providers/abloatai/)** — or go straight to one of the APIs or properties below.
+
+### APIs (8)
+
+- [Ablo Integration-Helper MCP Server](https://apis.io/apis/abloatai/ablo-integration-helper-mcp-server/) — A public, anonymous, stateless Streamable-HTTP MCP server Ablo runs on its own domain so an AI coding assistant writing an Ablo integration can search the…
+- [Ablo Branches API](https://apis.io/apis/abloatai/ablo-branches-api/) — The branches API from Ablo — 4 operation(s) for branches.
+- [Ablo Claims API](https://apis.io/apis/abloatai/ablo-claims-api/) — The claims API from Ablo — 7 operation(s) for claims.
+- [Ablo Commits API](https://apis.io/apis/abloatai/ablo-commits-api/) — The commits API from Ablo — 2 operation(s) for commits.
+- [Ablo Credentials API](https://apis.io/apis/abloatai/ablo-credentials-api/) — The credentials API from Ablo — 5 operation(s) for credentials.
+- [Ablo Logs API](https://apis.io/apis/abloatai/ablo-logs-api/) — The logs API from Ablo — 2 operation(s) for logs.
+- [Ablo Models API](https://apis.io/apis/abloatai/ablo-models-api/) — The models API from Ablo — 2 operation(s) for models.
+- [Ablo Schema API](https://apis.io/apis/abloatai/ablo-schema-api/) — The schema API from Ablo — 1 operation(s) for schema.
+
+### Published properties
+
+Each property below is a page on APIs.io carrying the machine-readable artifact and what it says.
+
+#### AsyncAPI (1)
+
+Event-driven and webhook contracts.
+
+- [Abloatai Webhooks](https://apis.io/asyncapis/abloatai/abloatai-webhooks/)
+
+#### MCP servers (1)
+
+Model Context Protocol servers that expose the API to agents.
+
+- [abloatai-mcp.yml](https://apis.io/servers/abloatai/abloatai-mcp-yml/)
+
+#### Agentic access (1)
+
+Which operations an agent can call, which act, and which need a human in the loop.
+
+- [Abloatai Agentic Access](https://apis.io/agentic-access/abloatai/abloatai-agentic-access/)
+
+#### Overlays (1)
+
+OpenAPI overlays, including conversational phrasing for each operation.
+
+- [Abloatai Api Overlay](https://apis.io/overlays/abloatai/abloatai-api-overlay/)
+
+#### Security (2)
+
+Authentication, trust centre, and vulnerability disclosure.
+
+- [Abloatai Authentication](https://apis.io/security/abloatai/abloatai-authentication/)
+- [Abloatai Domain Security](https://apis.io/security/abloatai/abloatai-domain-security/)
+
+#### Plans and pricing (1)
+
+Published plans, tiers and prices.
+
+- [Abloatai Plans Pricing](https://apis.io/plans/abloatai/abloatai-plans-pricing/)
+
+#### Rate limits (1)
+
+Published request limits.
+
+- [Abloatai Rate Limits](https://apis.io/rate-limits/abloatai/abloatai-rate-limits/)
+
+## Where to find this API
+
+Links to the company's own pages. This repository publishes no copy of their specifications — the canonical document is theirs and lives at the URLs below.
+
+- [Website](https://www.abloatai.com/)
+- [Documentation](https://docs.abloatai.com)
+- [Getting started](https://docs.abloatai.com/quickstart)
+- [API reference](https://docs.abloatai.com/api-reference)
+- [Pricing](https://docs.abloatai.com/pricing)
+- [Sign up](https://dashboard.abloatai.com)
+- [Support](https://github.com/Abloatai/abloatai/issues)
+- [Changelog](https://github.com/Abloatai/abloatai/blob/main/CHANGELOG.md)
+- [Blog](https://www.abloatai.com/blog)
+- [Terms of service](https://www.abloatai.com/terms-conditions)
+- [Privacy policy](https://www.abloatai.com/privacy-policy)
+- [GitHub](https://github.com/Abloatai)
+
+## API Evangelist rating
+
+**Kin Score 60.0** — strong · rubric 0.25.0 · scored 2026-10-23
+
+| Facet | Score |
+|---|---|
+| Discoverability | 75.0 |
+| Contract quality | 52.5 |
+| Contract governance | 4.5 |
+| Operational transparency | 50.0 |
+| Developer ergonomics | 75.6 |
+| Access clarity | 63.2 |
+
+**Agent readiness 43.9** — agent-native
+
+| Agent-readiness dimension | Result |
+|---|---|
+| Spec Presence | yes |
+| Agentic Access | derived (partial credit) |
+| Reversibility Documented | — |
+| MCP Server | documented (partial credit) |
+| Auth Clarity | bearer (partial credit) |
+| Idempotency | verified |
+| Error Semantics | verified |
+| OpenAPI Examples | — |
+| Rate Limit Signal | documented (partial credit) |
+| Event Surface Described | yes |
+| Agent Skills | derived (partial credit) |
+| Well Known Catalog | — |
+| Consent Identity | — |
+| Agent Card | — |
+| Dry Run Mode | — |
+| Delegated Identity | — |
+| Protected Resource Metadata | — |
+| Dynamic Client Registration | — |
+| Agentic Commerce | — |
+| Pagination Ratio | paginated |
+| Operation Distinctiveness | distinct |
+
+**Regulatory alignment 24.5** — Horizontal (data, software, accessibility, platform)
+
+The rubric is published at [github.com/api-evangelist/kin-score](https://github.com/api-evangelist/kin-score). The per-check breakdown behind these numbers — which checks were earned, partial or missed — along with score history and how this provider compares to its peers, is available at [apis.io/providers/abloatai/](https://apis.io/providers/abloatai/).
+
+## How this profile is made
+
+API Evangelist profiles a company's public API surface the way a developer would find it: the website, developer portal and documentation, the specifications it publishes, its public repositories, and its pricing, status and changelog pages. From that it derives the properties above — contracts split per API, workflows, schemas, collections, governance rules, plans and rate limits — and scores them against the published [Kin Score rubric](https://github.com/api-evangelist/kin-score).
+
+The artifacts are published on [APIs.io](https://apis.io), not in this repository. This repository is the public record for Ablo: the place to say something is wrong, missing or out of date, and to ask for a re-score or a removal.
+
+## Open an issue
+
+- **Something about this listing** — a wrong description, a missing API, a stale artifact or a question about the rating: [open an issue on this repository](https://github.com/api-evangelist/abloatai/issues/new).
+- **A new API, or one that is not in the catalog yet** — [submit it on APIs.io](https://apis.io/add/).
+- **Anything else** — [the APIs.io inbox](https://github.com/api-search/inbox/issues/new) or [info@apievangelist.com](mailto:info@apievangelist.com).
