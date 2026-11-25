@@ -66,7 +66,7 @@
 
 Ablo is collaboration infrastructure for AI agents: one API that lets agents, apps and people claim, change and confirm the same database rows without clobbering each other. Rows stay in the customer's own Postgres — Ablo holds only an ordered transaction log and the coordination state — while durable claims (leases with a wait-line, which make a second writer wait and then hand it the fresh row rather than lock), guarded idempotent writes with stale premises, atomic batch commits and signed webhook delivery turn concurrent multi-agent editing into something that serializes instead of racing. The surface is a 32-operation OpenAPI 3.1 REST API, a WSS realtime stream, a TypeScript SDK and CLI released in lockstep with the API, and two MCP servers.
 
-**Areas:** Agent Infrastructure · multi-agent-coordination · concurrency-control · State Management · Database · PostgreSQL · real-time-sync · MCP · Developer Tools · backend-infrastructure
+**Areas:** Agent Infrastructure · Multi‑Agent Coordination · Concurrency Control · State Management · Database · PostgreSQL · Real-time Sync · MCP · Developer Tools · Backend Infrastructure
 
 ## Ablo on APIs.io
 
@@ -103,32 +103,45 @@ Model Context Protocol servers that expose the API to agents.
 
 Which operations an agent can call, which act, and which need a human in the loop.
 
-- [Abloatai Agentic Access](https://apis.io/agentic-access/abloatai/abloatai-agentic-access/)
+- [Ablo Agentic Access](https://apis.io/agentic-access/abloatai/abloatai-agentic-access/)
 
 #### Overlays (1)
 
 OpenAPI overlays, including conversational phrasing for each operation.
 
-- [Abloatai Api Overlay](https://apis.io/overlays/abloatai/abloatai-api-overlay/)
+- [Ablo Api Overlay](https://apis.io/overlays/abloatai/abloatai-api-overlay/)
+
+#### Governance rules (1)
+
+Spectral rulesets for the provider's contracts.
+
+- [Ablo API Rules](https://apis.io/rules/abloatai/abloatai-rules/)
 
 #### Security (2)
 
 Authentication, trust centre, and vulnerability disclosure.
 
-- [Abloatai Authentication](https://apis.io/security/abloatai/abloatai-authentication/)
-- [Abloatai Domain Security](https://apis.io/security/abloatai/abloatai-domain-security/)
+- [Ablo Authentication](https://apis.io/security/abloatai/abloatai-authentication/)
+- [Ablo Domain Security](https://apis.io/security/abloatai/abloatai-domain-security/)
 
-#### Plans and pricing (1)
+#### Plans and pricing (2)
 
 Published plans, tiers and prices.
 
-- [Abloatai Plans Pricing](https://apis.io/plans/abloatai/abloatai-plans-pricing/)
+- [Ablo Plans Pricing](https://apis.io/plans/abloatai/abloatai-plans-pricing/)
+- [Ablo Price Estimates](https://apis.io/plans/abloatai/abloatai-price-estimates/)
 
 #### Rate limits (1)
 
 Published request limits.
 
-- [Abloatai Rate Limits](https://apis.io/rate-limits/abloatai/abloatai-rate-limits/)
+- [Ablo Rate Limits](https://apis.io/rate-limits/abloatai/abloatai-rate-limits/)
+
+#### FinOps (1)
+
+What the API costs to run, by operation.
+
+- [Ablo Finops](https://apis.io/finops/abloatai/abloatai-finops/)
 
 ## Where to find this API
 
@@ -149,18 +162,18 @@ Links to the company's own pages. This repository publishes no copy of their spe
 
 ## API Evangelist rating
 
-**Kin Score 60.0** — strong · rubric 0.25.0 · scored 2026-10-23
+**Kin Score 64.8** — strong · rubric 0.28.1 · scored 2026-11-21
 
 | Facet | Score |
 |---|---|
 | Discoverability | 75.0 |
-| Contract quality | 52.5 |
-| Contract governance | 4.5 |
-| Operational transparency | 50.0 |
+| Contract quality | 57.4 |
+| Contract governance | 18.2 |
+| Operational transparency | 52.4 |
 | Developer ergonomics | 75.6 |
-| Access clarity | 63.2 |
+| Access clarity | 75.5 |
 
-**Agent readiness 43.9** — agent-native
+**Agent readiness 43.0** — agent-native
 
 | Agent-readiness dimension | Result |
 |---|---|
@@ -185,8 +198,12 @@ Links to the company's own pages. This repository publishes no copy of their spe
 | Agentic Commerce | — |
 | Pagination Ratio | paginated |
 | Operation Distinctiveness | distinct |
+| MCP Tool Quality | na |
+| Onboarding Descriptor | — |
+| Dns Aid Index | na |
+| Markdown Negotiation | na |
 
-**Regulatory alignment 24.5** — Horizontal (data, software, accessibility, platform)
+**Regulatory alignment 18.6** — Horizontal (data, software, accessibility, platform)
 
 The rubric is published at [github.com/api-evangelist/kin-score](https://github.com/api-evangelist/kin-score). The per-check breakdown behind these numbers — which checks were earned, partial or missed — along with score history and how this provider compares to its peers, is available at [apis.io/providers/abloatai/](https://apis.io/providers/abloatai/).
 
